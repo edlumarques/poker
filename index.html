@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Poker do Serafim</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: faixa de feltro no topo com o nome do grupo; abaixo, abas e painéis tabulares. Números sempre em mono. */
+:root{
+  --bg:#f1f3ef; --surface:#ffffff; --surface-2:#f6f7f3; --ink:#17221b; --muted:#5d6b62; --line:#dde3db;
+  --felt:#173e2a; --felt-2:#1f4d35; --felt-ink:#eef3ea; --gold:#a07c26; --gold-soft:#f3e8cc;
+  --good:#2c7549; --good-soft:#e0efe5; --warn:#9c6410; --warn-soft:#f7ebd4; --bad:#ad3e2d; --bad-soft:#f6e0db;
+  --f-display:"Young Serif", Georgia, "Times New Roman", serif;
+  --f-body:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-num:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1410; --surface:#151f19; --surface-2:#1a261f; --ink:#e3eae4; --muted:#93a399; --line:#26332a;
+    --felt:#0f2a1c; --felt-2:#153624; --felt-ink:#e8eee5; --gold:#d4ae58; --gold-soft:#372f1d;
+    --good:#6cbf8c; --good-soft:#1b3224; --warn:#e2a750; --warn-soft:#382b16; --bad:#e3826f; --bad-soft:#3a201b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1410; --surface:#151f19; --surface-2:#1a261f; --ink:#e3eae4; --muted:#93a399; --line:#26332a;
+  --felt:#0f2a1c; --felt-2:#153624; --felt-ink:#e8eee5; --gold:#d4ae58; --gold-soft:#372f1d;
+  --good:#6cbf8c; --good-soft:#1b3224; --warn:#e2a750; --warn-soft:#382b16; --bad:#e3826f; --bad-soft:#3a201b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+/* topo */
+.top{background:var(--felt);color:var(--felt-ink);background-image:radial-gradient(ellipse at 20% 0%, var(--felt-2), transparent 70%)}
+.top .wrap{padding-block:18px 0;display:flex;flex-direction:column;gap:14px}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0;letter-spacing:.2px}
+.brand .suits{color:var(--gold);letter-spacing:4px;font-size:14px}
+.top-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.top select,.top .ghost{background:transparent;border:1px solid color-mix(in srgb, var(--felt-ink) 30%, transparent);color:var(--felt-ink);border-radius:8px;padding:6px 10px;cursor:pointer}
+.top select option{color:#17221b;background:#fff}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;color:color-mix(in srgb, var(--felt-ink) 70%, transparent);padding:10px 12px 12px;cursor:pointer;white-space:nowrap;font-weight:500;border-bottom:3px solid transparent}
+nav.tabs button[aria-current="page"]{color:var(--felt-ink);border-bottom-color:var(--gold)}
+.demo-bar{background:var(--gold-soft);color:var(--ink);font-size:13px}
+.demo-bar .wrap{padding-block:8px;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.demo-bar button{background:none;border:1px solid var(--gold);border-radius:6px;padding:3px 9px;cursor:pointer;font-size:12px}
+
+main.wrap{padding-block:22px 60px;display:flex;flex-direction:column;gap:18px}
+h2{font-family:var(--f-display);font-weight:400;font-size:21px;margin:0;text-wrap:balance}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:600}
+.head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.panel-pad{padding:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-size:19px;font-weight:600}
+.stat .s{font-size:13px;color:var(--muted)}
+
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--felt);color:var(--felt-ink)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 13px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--felt);border-color:var(--felt);color:var(--felt-ink)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.icon-btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:30px;height:30px;cursor:pointer;display:inline-grid;place-items:center}
+
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td.r,th.r{text-align:right}
+td.c,th.c{text-align:center}
+tbody tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--surface-2)}
+
+/* ficha de posição */
+.chip{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;font-family:var(--f-num);font-weight:600;font-size:13px;border:2px dashed transparent;background:var(--surface-2);color:var(--muted)}
+.chip.p1{background:var(--gold);color:#1b1505;border-color:color-mix(in srgb,#fff 55%,transparent)}
+.chip.p2{background:#9aa5a0;color:#111;border-color:color-mix(in srgb,#fff 55%,transparent)}
+.chip.p3{background:#a86b45;color:#fff;border-color:color-mix(in srgb,#fff 45%,transparent)}
+.pts{font-family:var(--f-num);font-weight:600;font-size:17px}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.gold{background:var(--gold-soft);color:var(--gold)}
+.pill.plain{background:var(--surface-2);color:var(--muted)}
+
+.weeks{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.wk{font-family:var(--f-num);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 7px;background:var(--surface)}
+.wk b{font-weight:600}
+.wk.off{opacity:.45;text-decoration:line-through}
+.wk.fin{border-color:var(--gold);background:var(--gold-soft)}
+
+.ev-list{display:flex;flex-direction:column}
+.ev{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.ev:last-child{border-bottom:0}
+.ev:hover{background:var(--surface-2)}
+.ev .date{font-family:var(--f-num);font-size:13px;width:70px;color:var(--muted)}
+.ev .who{min-width:0}
+.ev .who strong{display:block}
+.ev .who span{font-size:13px;color:var(--muted)}
+.ev-detail{background:var(--surface-2);border-bottom:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:16px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.two>*{min-width:0}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input.cell{width:84px;padding:5px 7px;text-align:right;font-family:var(--f-num)}
+input.cell.pos{width:58px}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--felt)}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+.row-off td{opacity:.45}
+.err{color:var(--bad);font-size:14px}
+.note{font-size:13px;color:var(--muted)}
+
+.pay td.cell{padding:5px;text-align:center}
+.pay .pc{width:38px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--surface);display:inline-grid;place-items:center;font-size:12px;font-weight:600}
+.pay button.pc{cursor:pointer}
+.pay .pc.ok{background:var(--good-soft);border-color:transparent;color:var(--good)}
+.pay .pc.late{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+.pay .pc.soon{color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+
+.order{list-style:none;margin:0;padding:0}
+.order li{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+.order li:last-child{border-bottom:0}
+.order .n{font-family:var(--f-num);color:var(--muted);width:22px}
+.order .nm{flex:1;min-width:0}
+.order .nm small{display:block;color:var(--muted);font-size:12px}
+.order li.next{background:var(--gold-soft)}
+
+.big{font-family:var(--f-display);font-size:32px;line-height:1.1}
+.login{max-width:380px;margin:60px auto;display:flex;flex-direction:column;gap:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom, 0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:calc(100% - 32px)}
+.empty{padding:26px 16px;text-align:center;color:var(--muted)}
+@media (max-width:560px){
+  .hide-sm{display:none}
+  .brand h1{font-size:22px}
+  th,td{padding:8px 7px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// =====================================================================
+// CONFIGURAÇÃO — cole aqui os dados do seu projeto Supabase
+// (Project Settings → API). Com os dois vazios, o app abre em modo
+// demonstração com dados de exemplo salvos só no navegador.
+// =====================================================================
+const SUPABASE_URL = "https://okvzujswoziqsnapwdtq.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rdnp1anN3b3ppcXNuYXB3ZHRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDAzNjgsImV4cCI6MjEwNzkxNjM2OH0.s8QTn3xBpKv3fXFX4JNk6w1TCWTqaVK4snQpTroqI0A";
+const DEMO = !SUPABASE_URL || !SUPABASE_ANON_KEY;
+
+// Regras padrão (Regulamento 2027). Cada temporada pode sobrescrever na aba Admin.
+const DEFAULT_CFG = {
+  fee: 200, installments: 10, first_month: 1, weekday: 4, top_n: 15,
+  cash:          { buyin: 50,  chips: 5000,  limit: 7 },
+  final_cash:    { buyin: 100, chips: 10000, limit: 6 },
+  tourney:       { buyin: 150, rebuy: 150, split: [50, 30, 20] },
+  final_tourney: { buyin: 500, rebuy: 500, split: [60, 30, 10] },
+  prizes:        { cash: [5000, 3000, 2000], tourney: [5000, 3000, 2000] },
+  special:       { quadra: 20, straight_flush: 50, royal: 100 }
+};
+const HAND_LABEL = { quadra: "Quadra", straight_flush: "Straight flush", royal: "Royal straight flush" };
+const WD = ["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+const MON = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const TABLES = { players:"players", seasons:"seasons", events:"events", cash:"cash_results", tourney:"tourney_results", hands:"special_hands", payments:"payments", statements:"statements" };
+
+const S = {
+  players:[], seasons:[], events:[], cash:[], tourney:[], hands:[], payments:[], statements:[],
+  seasonId:null, tab:"ranking", rankType:"cash", me:null, asPlayer:false,
+  openEvent:null, editing:null, expanded:null, urls:{}, loginMsg:"", signup:false, busy:false
+};
+let sb = null;
+
+// ---------- utilidades ----------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const brl = n => (Number(n)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const brlSigned = n => (n>0?"+":"") + brl(n);
+const fnum = n => (Number(n)||0).toLocaleString("pt-BR");
+const pd = s => { const [y,m,d] = String(s).slice(0,10).split("-").map(Number); return new Date(y, m-1, d); };
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+const dd = d => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+const fmtD = s => { const d = pd(s); return `${WD[d.getDay()].slice(0,3)}, ${dd(d)}`; };
+const fmtDY = s => { const d = pd(s); return `${dd(d)}/${d.getFullYear()}`; };
+const season = () => S.seasons.find(s => s.id === S.seasonId);
+const player = id => S.players.find(p => p.id === id);
+const pname = id => player(id)?.name || "—";
+const isAdmin = () => !!S.me?.admin && !S.asPlayer;
+const byDate = (a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id;
+const seasonEvents = () => S.events.filter(e => e.season_id === S.seasonId).sort(byDate);
+const activePlayers = () => S.players.filter(p => p.active !== false).sort((a,b) => a.name.localeCompare(b.name,"pt-BR"));
+
+function cfg(){
+  const out = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  const c = season()?.config || {};
+  for (const k in c){
+    if (c[k] && typeof c[k] === "object" && !Array.isArray(c[k])) out[k] = { ...out[k], ...c[k] };
+    else out[k] = c[k];
+  }
+  return out;
+}
+function toast(msg){
+  const t = document.getElementById("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2600);
+}
+
+// ---------- camada de dados (Supabase ou demonstração) ----------
+const DEMO_KEY = "serafim-demo-v1";
+function demoSave(){ try { const d = {}; for (const k in TABLES) d[k] = S[k]; localStorage.setItem(DEMO_KEY, JSON.stringify(d)); } catch(e){} }
+function demoLoad(){
+  try { const raw = localStorage.getItem(DEMO_KEY); if (raw) return JSON.parse(raw); } catch(e){}
+  return demoSeed();
+}
+function nextId(k){ return S[k].reduce((m,r) => Math.max(m, r.id||0), 0) + 1; }
+const matches = (row, m) => Object.entries(m).every(([c,v]) => row[c] === v);
+
+const api = {
+  async loadAll(){
+    if (DEMO){ Object.assign(S, demoLoad()); return; }
+    const res = await Promise.all(Object.entries(TABLES).map(async ([k,t]) => {
+      const { data, error } = await sb.from(t).select("*");
+      if (error) throw error;
+      return [k, data];
+    }));
+    res.forEach(([k,d]) => S[k] = d);
+  },
+  async insert(k, row){
+    if (DEMO){ const r = { ...row, id: nextId(k) }; S[k].push(r); demoSave(); return r; }
+    const { data, error } = await sb.from(TABLES[k]).insert(row).select().single();
+    if (error) throw error; S[k].push(data); return data;
+  },
+  async insertMany(k, rows){
+    if (!rows.length) return [];
+    if (DEMO){ S[k].push(...rows); demoSave(); return rows; }
+    const { data, error } = await sb.from(TABLES[k]).insert(rows).select();
+    if (error) throw error; S[k].push(...data); return data;
+  },
+  async update(k, id, patch){
+    if (DEMO){ const r = S[k].find(x => x.id === id); Object.assign(r, patch); demoSave(); return r; }
+    const { data, error } = await sb.from(TABLES[k]).update(patch).eq("id", id).select().single();
+    if (error) throw error; const i = S[k].findIndex(x => x.id === id); S[k][i] = data; return data;
+  },
+  async upsert(k, row, keys){
+    const m = Object.fromEntries(keys.map(c => [c, row[c]]));
+    if (DEMO){ const i = S[k].findIndex(x => matches(x, m)); if (i >= 0) S[k][i] = { ...S[k][i], ...row }; else S[k].push(row); demoSave(); return row; }
+    const { data, error } = await sb.from(TABLES[k]).upsert(row, { onConflict: keys.join(",") }).select().single();
+    if (error) throw error; const i = S[k].findIndex(x => matches(x, m)); if (i >= 0) S[k][i] = data; else S[k].push(data); return data;
+  },
+  async del(k, m){
+    if (!DEMO){ let q = sb.from(TABLES[k]).delete(); for (const [c,v] of Object.entries(m)) q = q.eq(c, v); const { error } = await q; if (error) throw error; }
+    S[k] = S[k].filter(x => !matches(x, m)); if (DEMO) demoSave();
+  },
+  async upload(file, path){
+    if (DEMO){
+      const data = await new Promise((ok, no) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = no; fr.readAsDataURL(file); });
+      try { localStorage.setItem("serafim-demo-file:" + path, data); } catch(e){ throw new Error("Arquivo grande demais para o modo demonstração."); }
+      return path;
+    }
+    const { error } = await sb.storage.from("extratos").upload(path, file, { upsert: true });
+    if (error) throw error; return path;
+  },
+  async fileUrl(path){
+    if (DEMO){ try { return localStorage.getItem("serafim-demo-file:" + path); } catch(e){ return null; } }
+    const { data, error } = await sb.storage.from("extratos").createSignedUrl(path, 3600);
+    return error ? null : data.signedUrl;
+  }
+};
+
+// ---------- regras de pontuação ----------
+// Cash: classificação pelo resultado do dia (fichas finais − cacifes).
+// 1º leva N pontos (N = presentes), último leva 1. Passou do limite de cacifes ou ficou < 2h: 0 ponto.
+function cashResults(ev){
+  const c = ev.is_final ? cfg().final_cash : cfg().cash;
+  const per = c.buyin / c.chips;
+  // Quem estoura o limite de cacifes (ou fica < 2h) vai para o fim da classificação com 0 ponto;
+  // todos os demais presentes passam à frente dele.
+  const arr = S.cash.filter(r => r.event_id === ev.id)
+    .map(r => ({ r, lucro: Math.round((r.final_chips * per - r.buyins * c.buyin) * 100) / 100,
+                 reason: r.buyins > c.limit ? `passou de ${c.limit} cacifes` : !r.hours_ok ? "menos de 2h" : "" }))
+    .sort((a,b) => (!!a.reason - !!b.reason) || b.lucro - a.lucro);
+  const N = arr.length, out = {};
+  arr.forEach((a, i) => {
+    const first = a.reason ? i : arr.findIndex(x => !x.reason && x.lucro === a.lucro);
+    const pts = a.reason ? 0 : N - first;
+    out[a.r.player_id] = { pts, pos: first + 1, lucro: a.lucro, buyins: a.r.buyins, chips: a.r.final_chips, reason: a.reason, invested: a.r.buyins * c.buyin };
+  });
+  return out;
+}
+// Torneio: posição informada. 1º leva N pontos, último 1. Prêmio do dia pela divisão configurada.
+function tourneyResults(ev){
+  const c = ev.is_final ? cfg().final_tourney : cfg().tourney;
+  const rows = S.tourney.filter(r => r.event_id === ev.id);
+  const N = rows.length, rebuys = rows.filter(r => r.rebuy).length;
+  const pool = N * c.buyin + rebuys * c.rebuy, out = {};
+  rows.forEach(r => {
+    const pos = Number(r.position) || null;
+    const pts = pos ? Math.max(0, N - pos + 1) : 0;
+    const prize = pos && pos <= c.split.length ? Math.round(pool * c.split[pos-1]) / 100 : 0;
+    out[r.player_id] = { pts, pos, rebuy: r.rebuy, prize };
+  });
+  return { out, pool, N, rebuys };
+}
+function standings(type){
+  const c = cfg(), per = {};
+  for (const ev of seasonEvents().filter(e => e.status === "realizado")){
+    const res = type === "cash" ? cashResults(ev) : tourneyResults(ev).out;
+    for (const [pid, r] of Object.entries(res)){
+      const p = per[pid] ||= { pid: Number(pid), reg: [], final: null };
+      if (ev.is_final) p.final = r.pts * 2;
+      else p.reg.push({ ev, pts: r.pts, reason: r.reason });
+    }
+  }
+  const rows = Object.values(per).map(p => {
+    const sorted = [...p.reg].sort((a,b) => b.pts - a.pts || byDate(a.ev, b.ev));
+    const keep = sorted.slice(0, c.top_n);
+    const top = keep.reduce((s,x) => s + x.pts, 0);
+    const all = p.reg.reduce((s,x) => s + x.pts, 0);
+    return { ...p, kept: new Set(keep.map(x => x.ev.id)), top, total: top + (p.final || 0), bruto: all + (p.final || 0), played: p.reg.length, discarded: Math.max(0, p.reg.length - c.top_n) };
+  });
+  rows.sort((a,b) => b.total - a.total || b.bruto - a.bruto || pname(a.pid).localeCompare(pname(b.pid),"pt-BR"));
+  let rank = 0;
+  rows.forEach((r,i) => { if (i === 0 || r.total !== rows[i-1].total || r.bruto !== rows[i-1].bruto) rank = i + 1; r.rank = rank; });
+  return rows;
+}
+
+// ---------- rodízio de casas ----------
+function hostOrder(){ return (season()?.host_order || []).filter(id => player(id) && player(id).active !== false); }
+function upcoming(n){
+  const order = hostOrder(), c = cfg(), t = iso(today());
+  const evs = seasonEvents().filter(e => e.status !== "cancelado");
+  const out = evs.filter(e => e.date >= t && e.status === "agendado").slice(0, n).map(e => ({ date: e.date, host: e.host_id, ev: e }));
+  if (out.length >= n || !order.length) return out;
+  const last = [...evs].reverse().find(e => order.includes(e.host_id));
+  let idx = last ? (order.indexOf(last.host_id) + 1) % order.length : 0;
+  const yesterday = new Date(today()); yesterday.setDate(yesterday.getDate() - 1);
+  let d = last && pd(last.date) > yesterday ? pd(last.date) : yesterday;
+  while (out.length < n){
+    d = new Date(d); d.setDate(d.getDate() + 1);
+    while (d.getDay() !== Number(c.weekday)) d.setDate(d.getDate() + 1);
+    out.push({ date: iso(d), host: order[idx], projected: true });
+    idx = (idx + 1) % order.length;
+  }
+  return out;
+}
+
+// ---------- mensalidades ----------
+function installments(){
+  const c = cfg(), y = season()?.year || today().getFullYear(), list = [];
+  for (let i = 1; i <= c.installments; i++){
+    const m0 = Number(c.first_month) - 1 + (i - 1);
+    const yy = y + Math.floor(m0 / 12), mm = m0 % 12;
+    list.push({ i, label: MON[mm], year: yy, due: new Date(yy, mm + 1, 0) });
+  }
+  return list;
+}
+function payStatus(pid, inst){
+  const p = S.payments.find(x => x.season_id === S.seasonId && x.player_id === pid && x.installment === inst.i);
+  if (p) return { s: "ok", p };
+  return { s: today() > inst.due ? "late" : "soon" };
+}
+
+// =====================================================================
+// TELAS
+// =====================================================================
+function render(){
+  const app = document.getElementById("app");
+  if (!S.me){ app.innerHTML = loginView(); return; }
+  const tabs = [["ranking","Ranking"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
+  if (isAdmin()) tabs.push(["admin","Admin"]);
+  if (!tabs.find(t => t[0] === S.tab)) S.tab = "ranking";
+  const seasons = [...S.seasons].sort((a,b) => b.year - a.year);
+  app.innerHTML = `
+  <header class="top"><div class="wrap">
+    <div class="brand-row">
+      <div class="brand"><h1>Poker do Serafim</h1><span class="suits" aria-hidden="true">♠ ♥ ♦ ♣</span></div>
+      <div class="top-ctl">
+        ${seasons.length ? `<label class="hide-sm" for="season-sel" style="opacity:.75">Temporada</label>
+        <select id="season-sel" data-act="season">${seasons.map(s => `<option value="${s.id}" ${s.id===S.seasonId?"selected":""}>${s.year}</option>`).join("")}</select>` : ""}
+        ${DEMO ? "" : `<button class="ghost" data-act="logout">Sair</button>`}
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Seções">${tabs.map(([k,l]) => `<button data-act="tab" data-v="${k}" ${S.tab===k?'aria-current="page"':""}>${l}</button>`).join("")}</nav>
+  </div></header>
+  ${DEMO ? `<div class="demo-bar"><div class="wrap"><span><b>Modo demonstração.</b> Jogadores e resultados são exemplos e ficam salvos só neste navegador.</span>
+    <span style="display:flex;gap:6px"><button data-act="asplayer">${S.asPlayer ? "Ver como administrador" : "Ver como jogador"}</button><button data-act="reset-demo">Recomeçar exemplo</button></span></div></div>` : ""}
+  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
+  if (S.tab === "caixa") loadUrls();
+}
+
+function loginView(){
+  return `<div class="wrap"><form class="login panel panel-pad" id="login-form">
+    <div style="text-align:center;display:flex;flex-direction:column;gap:4px">
+      <span style="color:var(--gold);letter-spacing:5px">♠ ♥ ♦ ♣</span>
+      <h2>Poker do Serafim</h2>
+      <span class="muted">${S.signup ? "Primeiro acesso: crie sua senha" : "Entre para ver pontuação, rodízio e caixa"}</span>
+    </div>
+    <label class="f" for="lg-email">E-mail<input id="lg-email" type="email" required autocomplete="email" value="${esc(S.loginEmail||"")}"></label>
+    <label class="f" for="lg-pass">Senha<input id="lg-pass" type="password" required minlength="6" autocomplete="${S.signup?"new-password":"current-password"}"></label>
+    ${S.loginMsg ? `<div class="err">${esc(S.loginMsg)}</div>` : ""}
+    <button class="btn primary" type="submit" ${S.busy?"disabled":""}>${S.signup ? "Criar senha e entrar" : "Entrar"}</button>
+    <button class="btn" type="button" data-act="toggle-signup">${S.signup ? "Já tenho senha" : "Primeiro acesso? Criar senha"}</button>
+    <p class="note" style="margin:0">Use o e-mail que o administrador cadastrou no grupo.</p>
+  </form></div>`;
+}
+
+function noSeasonView(){
+  return `<div class="panel empty"><p>Nenhuma temporada criada ainda.</p>${isAdmin() ? `<button class="btn primary" data-act="new-season">Criar temporada ${today().getFullYear()+1}</button>` : `<p>Aguarde o administrador abrir a temporada.</p>`}</div>`;
+}
+
+// ---------- Ranking ----------
+function rankingView(){
+  const type = S.rankType, c = cfg(), rows = standings(type);
+  const evs = seasonEvents(), done = evs.filter(e => e.status === "realizado");
+  const finalDone = done.some(e => e.is_final);
+  const nx = upcoming(1)[0];
+  const prizes = c.prizes[type] || [];
+  const leader = rows[0];
+  return `
+  <div class="head-row">
+    <h2>Campeonato ${type === "cash" ? "de Cash Game" : "de Torneio"} ${season().year}</h2>
+    <div class="seg" role="group" aria-label="Campeonato">
+      <button data-act="rank" data-v="cash" aria-pressed="${type==="cash"}">Cash Game</button>
+      <button data-act="rank" data-v="tourney" aria-pressed="${type==="tourney"}">Torneio</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="k">Líder</span><span class="v">${leader ? esc(pname(leader.pid)) : "—"}</span><span class="s num">${leader ? leader.total + " pts" : "sem jogos"}</span></div>
+    <div class="stat"><span class="k">Semanas jogadas</span><span class="v num">${done.filter(e=>!e.is_final).length}</span><span class="s">contam as ${c.top_n} melhores de cada um</span></div>
+    <div class="stat"><span class="k">Próximo encontro</span><span class="v">${nx ? fmtD(nx.date) : "—"}</span><span class="s">${nx ? "casa de " + esc(pname(nx.host)) : "defina o rodízio"}</span></div>
+    <div class="stat"><span class="k">Dia final</span><span class="v">${finalDone ? "Realizado" : "Pontos em dobro"}</span><span class="s">não pode ser descartado</span></div>
+  </div>
+  <div class="panel tbl-wrap">
+    ${rows.length ? `<table>
+      <thead><tr><th class="c">#</th><th>Jogador</th><th class="r">Total</th><th class="r hide-sm">TOP ${c.top_n}</th><th class="r hide-sm">Final ×2</th><th class="r">Semanas</th><th class="r hide-sm">Desempate</th><th class="r">Prêmio</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const open = S.expanded === type + r.pid;
+        const weeks = [...r.reg].sort((a,b) => byDate(a.ev,b.ev));
+        return `<tr class="click" data-act="expand" data-v="${type + r.pid}" aria-expanded="${open}">
+          <td class="c"><span class="chip ${r.rank<=3?"p"+r.rank:""}">${r.rank}</span></td>
+          <td><strong>${esc(pname(r.pid))}</strong></td>
+          <td class="r"><span class="pts">${r.total}</span></td>
+          <td class="r num hide-sm">${r.top}</td>
+          <td class="r num hide-sm">${r.final == null ? "—" : r.final}</td>
+          <td class="r num">${r.played}${r.discarded ? ` <span class="muted">(−${r.discarded})</span>` : ""}</td>
+          <td class="r num hide-sm muted">${r.bruto}</td>
+          <td class="r num">${r.rank <= prizes.length ? brl(prizes[r.rank-1]) : ""}</td>
+        </tr>
+        ${open ? `<tr><td colspan="8" style="background:var(--surface-2)">
+          <div class="note">Pontos por semana — riscadas não entram na soma (fora das ${c.top_n} melhores)</div>
+          <div class="weeks">${weeks.map(w => `<span class="wk ${r.kept.has(w.ev.id)?"":"off"}" title="${esc(w.reason||"")}">${dd(pd(w.ev.date))} <b>${w.pts}</b></span>`).join("")}
+          ${r.final != null ? `<span class="wk fin">Final <b>${r.final}</b></span>` : ""}</div>
+        </td></tr>` : ""}`;
+      }).join("")}</tbody></table>`
+      : `<div class="empty">Nenhuma semana realizada nesta temporada ainda. A pontuação aparece aqui assim que a primeira noite for lançada.</div>`}
+  </div>
+  <p class="note">Pontuação: o 1º do dia recebe tantos pontos quanto o número de presentes e o último recebe 1. No cash, quem passa de ${c.cash.limit} cacifes ou joga menos de 2 horas fica com 0. Total = ${c.top_n} melhores semanas + dia final em dobro. Empate decidido pela soma de todas as semanas (coluna Desempate).</p>`;
+}
+
+// ---------- Semanas ----------
+function weeksView(){
+  if (S.editing) return editorView();
+  const evs = [...seasonEvents()].reverse();
+  return `
+  <div class="head-row"><h2>Semanas de ${season().year}</h2>${isAdmin() ? `<button class="btn primary" data-act="new-event">Lançar semana</button>` : ""}</div>
+  <div class="panel ev-list">
+    ${evs.length ? evs.map(ev => {
+      const cr = cashResults(ev), tr = tourneyResults(ev);
+      const cw = Object.entries(cr).find(([,r]) => r.pos === 1), tw = Object.entries(tr.out).find(([,r]) => r.pos === 1);
+      const pres = new Set([...Object.keys(cr), ...Object.keys(tr.out)]).size;
+      const st = ev.status === "realizado" ? `<span class="pill good">Realizada</span>` : ev.status === "cancelado" ? `<span class="pill bad">Cancelada</span>` : `<span class="pill plain">Agendada</span>`;
+      const open = S.openEvent === ev.id;
+      return `<button class="ev" data-act="open-event" data-v="${ev.id}" aria-expanded="${open}">
+        <span class="date">${fmtD(ev.date)}</span>
+        <span class="who"><strong>Casa de ${esc(pname(ev.host_id))} ${ev.is_final ? `<span class="pill gold">Dia final</span>` : ""}</strong>
+          <span>${ev.status === "realizado" ? `${pres} presentes · Cash: ${cw ? esc(pname(+cw[0])) : "—"} · Torneio: ${tw ? esc(pname(+tw[0])) : "—"}` : esc(ev.notes || "")}</span></span>
+        ${st}
+      </button>${open ? eventDetail(ev) : ""}`;
+    }).join("") : `<div class="empty">Nenhuma semana lançada ainda.${isAdmin() ? " Use “Lançar semana” para registrar a primeira noite." : ""}</div>`}
+  </div>`;
+}
+
+function eventDetail(ev){
+  const cc = ev.is_final ? cfg().final_cash : cfg().cash;
+  const cr = Object.entries(cashResults(ev)).sort((a,b) => a[1].pos - b[1].pos);
+  const tr = tourneyResults(ev), trs = Object.entries(tr.out).sort((a,b) => (a[1].pos||99) - (b[1].pos||99));
+  const hands = S.hands.filter(h => h.event_id === ev.id), sc = cfg().special;
+  const present = new Set([...cr.map(x=>x[0]), ...trs.map(x=>x[0])]).size;
+  const mult = ev.is_final ? 2 : 1;
+  const chipsIn = cr.reduce((s,[,r]) => s + r.buyins * cc.chips, 0), chipsOut = cr.reduce((s,[,r]) => s + r.chips, 0);
+  return `<div class="ev-detail">
+    ${ev.notes && ev.status === "realizado" ? `<div class="note">${esc(ev.notes)}</div>` : ""}
+    <div class="two">
+      <div class="panel tbl-wrap"><div class="panel-pad" style="padding-bottom:4px"><h3>Cash game ${ev.is_final ? "· final" : ""}</h3></div>
+        ${cr.length ? `<table><thead><tr><th class="c">#</th><th>Jogador</th><th class="r">Cacifes</th><th class="r">Resultado</th><th class="r">Pts</th></tr></thead><tbody>
+        ${cr.map(([pid,r]) => `<tr><td class="c"><span class="chip ${r.pos<=3?"p"+r.pos:""}">${r.pos}</span></td><td>${esc(pname(+pid))}${r.reason ? `<br><span class="pill bad">${esc(r.reason)}</span>` : ""}</td>
+          <td class="r num">${r.buyins}</td><td class="r num" style="color:${r.lucro>=0?"var(--good)":"var(--bad)"}">${brlSigned(r.lucro)}</td><td class="r num"><b>${r.pts*mult}</b></td></tr>`).join("")}
+        </tbody></table>
+        <div class="panel-pad note" style="padding-top:6px">Fichas: ${fnum(chipsIn)} compradas, ${fnum(chipsOut)} contadas ${chipsIn !== chipsOut ? `<span class="pill warn">diferença de ${fnum(chipsOut-chipsIn)}</span>` : `<span class="pill good">conferido</span>`}</div>` : `<div class="empty">Sem cash nesta data.</div>`}
+      </div>
+      <div class="panel tbl-wrap"><div class="panel-pad" style="padding-bottom:4px"><h3>Torneio ${ev.is_final ? "· final" : ""} · prêmio ${brl(tr.pool)}</h3></div>
+        ${trs.length ? `<table><thead><tr><th class="c">#</th><th>Jogador</th><th class="c">Re-buy</th><th class="r">Prêmio</th><th class="r">Pts</th></tr></thead><tbody>
+        ${trs.map(([pid,r]) => `<tr><td class="c"><span class="chip ${r.pos&&r.pos<=3?"p"+r.pos:""}">${r.pos||"—"}</span></td><td>${esc(pname(+pid))}</td><td class="c">${r.rebuy?"sim":""}</td>
+          <td class="r num">${r.prize ? brl(r.prize) : ""}</td><td class="r num"><b>${r.pts*mult}</b></td></tr>`).join("")}
+        </tbody></table>` : `<div class="empty">Sem torneio nesta data.</div>`}
+      </div>
+    </div>
+    ${hands.length ? `<div class="panel panel-pad"><h3 style="margin-bottom:6px">Mãos especiais</h3>${hands.map(h => `<div>${esc(pname(h.player_id))} — ${HAND_LABEL[h.kind]}: recebe ${brl(sc[h.kind])} de cada um dos outros ${present-1} presentes (${brl(sc[h.kind]*(present-1))})</div>`).join("")}</div>` : ""}
+    ${isAdmin() ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="edit-event" data-v="${ev.id}">Editar esta semana</button><button class="btn danger" data-act="del-event" data-v="${ev.id}">Excluir</button></div>` : ""}
+  </div>`;
+}
+
+function startEditor(ev){
+  const E = { ev: ev ? { ...ev } : null, cash: {}, tourney: {}, hands: [], err: "" , confirmDel:false};
+  if (!ev){
+    const nx = upcoming(1)[0];
+    E.ev = { date: nx ? nx.date : iso(today()), host_id: nx ? nx.host : (activePlayers()[0]?.id ?? null), is_final: false, status: "realizado", notes: "" };
+    const sched = nx?.ev; if (sched){ E.ev = { ...sched, status: "realizado" }; }
+  }
+  const ids = new Set(activePlayers().map(p => p.id));
+  if (E.ev.id){
+    S.cash.filter(r => r.event_id === E.ev.id).forEach(r => ids.add(r.player_id));
+    S.tourney.filter(r => r.event_id === E.ev.id).forEach(r => ids.add(r.player_id));
+  }
+  for (const id of ids){
+    const c = E.ev.id && S.cash.find(r => r.event_id === E.ev.id && r.player_id === id);
+    const t = E.ev.id && S.tourney.find(r => r.event_id === E.ev.id && r.player_id === id);
+    E.cash[id] = c ? { present: true, buyins: c.buyins, chips: c.final_chips, short: !c.hours_ok } : { present: false, buyins: 1, chips: 0, short: false };
+    E.tourney[id] = t ? { present: true, position: t.position ?? "", rebuy: t.rebuy } : { present: false, position: "", rebuy: false };
+  }
+  if (E.ev.id) E.hands = S.hands.filter(h => h.event_id === E.ev.id).map(h => ({ player_id: h.player_id, kind: h.kind }));
+  S.editing = E;
+}
+
+function chipCheck(){
+  const E = S.editing, cc = E.ev.is_final ? cfg().final_cash : cfg().cash;
+  let bought = 0, counted = 0;
+  for (const r of Object.values(E.cash)) if (r.present){ bought += (Number(r.buyins)||0) * cc.chips; counted += Number(r.chips)||0; }
+  const diff = counted - bought;
+  return `Compradas ${fnum(bought)} · contadas ${fnum(counted)} ${diff ? `<span class="pill warn">diferença ${fnum(diff)}</span>` : bought ? `<span class="pill good">fecha</span>` : ""}`;
+}
+
+function editorView(){
+  const E = S.editing, ev = E.ev, ids = Object.keys(E.cash).map(Number).sort((a,b) => pname(a).localeCompare(pname(b),"pt-BR"));
+  const cc = ev.is_final ? cfg().final_cash : cfg().cash, tc = ev.is_final ? cfg().final_tourney : cfg().tourney;
+  const players = activePlayers();
+  return `
+  <div class="head-row"><h2>${ev.id ? "Editar semana" : "Lançar semana"}</h2><button class="btn" data-act="cancel-edit">Voltar</button></div>
+  <div class="panel panel-pad form-grid">
+    <label class="f" for="ed-date">Data<input id="ed-date" type="date" value="${ev.date}" data-ed="ev.date"></label>
+    <label class="f" for="ed-host">Casa de<select id="ed-host" data-ed="ev.host_id">${players.map(p => `<option value="${p.id}" ${p.id===ev.host_id?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
+    <label class="f" for="ed-status">Situação<select id="ed-status" data-ed="ev.status">${[["realizado","Realizada"],["agendado","Agendada"],["cancelado","Cancelada"]].map(([v,l]) => `<option value="${v}" ${ev.status===v?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label class="f" for="ed-final">Tipo<select id="ed-final" data-ed="ev.is_final" data-rerender="1"><option value="0" ${!ev.is_final?"selected":""}>Semana regular</option><option value="1" ${ev.is_final?"selected":""}>Dia final (pontos em dobro)</option></select></label>
+    <label class="f" for="ed-notes" style="grid-column:1/-1">Observações<input id="ed-notes" type="text" value="${esc(ev.notes||"")}" data-ed="ev.notes" placeholder="Opcional"></label>
+  </div>
+  ${ev.status === "realizado" ? `
+  <div class="two">
+    <div class="panel tbl-wrap">
+      <div class="panel-pad" style="padding-bottom:4px"><h3>Cash game · cacife ${brl(cc.buyin)} = ${fnum(cc.chips)} fichas · limite ${cc.limit}</h3></div>
+      <table><thead><tr><th>Presente</th><th class="r">Cacifes</th><th class="r">Fichas finais</th><th class="c">&lt; 2h</th></tr></thead><tbody>
+      ${ids.map(id => { const r = E.cash[id]; return `<tr class="${r.present?"":"row-off"}">
+        <td><label class="check" for="c-p-${id}"><input type="checkbox" id="c-p-${id}" data-ed="cash.${id}.present" data-rerender="1" ${r.present?"checked":""}>${esc(pname(id))}</label></td>
+        <td class="r"><input class="cell" id="c-b-${id}" type="number" min="1" max="20" value="${r.buyins}" data-ed="cash.${id}.buyins" ${r.present?"":"disabled"} aria-label="Cacifes de ${esc(pname(id))}"></td>
+        <td class="r"><input class="cell" id="c-c-${id}" type="number" min="0" step="100" value="${r.chips}" data-ed="cash.${id}.chips" ${r.present?"":"disabled"} aria-label="Fichas finais de ${esc(pname(id))}"></td>
+        <td class="c"><input type="checkbox" id="c-s-${id}" data-ed="cash.${id}.short" ${r.short?"checked":""} ${r.present?"":"disabled"} aria-label="${esc(pname(id))} jogou menos de 2 horas"></td></tr>`; }).join("")}
+      </tbody></table>
+      <div class="panel-pad note" id="chipcheck">${chipCheck()}</div>
+    </div>
+    <div class="panel tbl-wrap">
+      <div class="panel-pad" style="padding-bottom:4px"><h3>Torneio · buy-in ${brl(tc.buyin)} · re-buy até o nível 2</h3></div>
+      <table><thead><tr><th>Presente</th><th class="r">Posição</th><th class="c">Re-buy</th></tr></thead><tbody>
+      ${ids.map(id => { const r = E.tourney[id]; return `<tr class="${r.present?"":"row-off"}">
+        <td><label class="check" for="t-p-${id}"><input type="checkbox" id="t-p-${id}" data-ed="tourney.${id}.present" data-rerender="1" ${r.present?"checked":""}>${esc(pname(id))}</label></td>
+        <td class="r"><input class="cell pos" id="t-o-${id}" type="number" min="1" max="30" value="${r.position}" data-ed="tourney.${id}.position" ${r.present?"":"disabled"} aria-label="Posição de ${esc(pname(id))}"></td>
+        <td class="c"><input type="checkbox" id="t-r-${id}" data-ed="tourney.${id}.rebuy" ${r.rebuy?"checked":""} ${r.present?"":"disabled"} aria-label="${esc(pname(id))} fez re-buy"></td></tr>`; }).join("")}
+      </tbody></table>
+      <div class="panel-pad note">Posição 1 = campeão do dia. Quem saiu primeiro fica com a maior posição.</div>
+    </div>
+  </div>
+  <div class="panel panel-pad" style="display:flex;flex-direction:column;gap:10px">
+    <h3>Mãos especiais (duas cartas na mão)</h3>
+    ${E.hands.map((h,i) => `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>${esc(pname(h.player_id))} — ${HAND_LABEL[h.kind]}</span><button class="btn sm danger" data-act="rm-hand" data-v="${i}">Remover</button></div>`).join("") || `<span class="note">Nenhuma registrada.</span>`}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label class="f" for="h-player" style="min-width:160px">Jogador<select id="h-player">${players.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select></label>
+      <label class="f" for="h-kind" style="min-width:180px">Mão<select id="h-kind">${Object.entries(HAND_LABEL).map(([k,l]) => `<option value="${k}">${l}</option>`).join("")}</select></label>
+      <button class="btn" data-act="add-hand">Adicionar</button>
+    </div>
+  </div>` : `<p class="note">Para semanas agendadas ou canceladas não há resultados a lançar.</p>`}
+  ${E.err ? `<div class="err">${esc(E.err)}</div>` : ""}
+  <div style="display:flex;gap:8px"><button class="btn primary" data-act="save-event" ${S.busy?"disabled":""}>Salvar semana</button><button class="btn" data-act="cancel-edit">Cancelar</button></div>`;
+}
+
+async function saveEvent(){
+  const E = S.editing, ev = E.ev;
+  E.err = "";
+  if (!ev.date){ E.err = "Informe a data."; return render(); }
+  const realized = ev.status === "realizado";
+  const cash = Object.entries(E.cash).filter(([,r]) => r.present && realized);
+  const tour = Object.entries(E.tourney).filter(([,r]) => r.present && realized);
+  if (realized){
+    const pos = tour.map(([,r]) => Number(r.position));
+    const n = tour.length;
+    if (pos.some(p => !p || p < 1 || p > n)) { E.err = `No torneio, cada presente precisa de uma posição de 1 a ${n}.`; return render(); }
+    if (new Set(pos).size !== pos.length) { E.err = "No torneio há posições repetidas."; return render(); }
+    if (cash.some(([,r]) => !(Number(r.buyins) >= 1))) { E.err = "No cash, cada presente precisa de pelo menos 1 cacife."; return render(); }
+  }
+  S.busy = true; render();
+  try {
+    const row = { season_id: S.seasonId, date: ev.date, host_id: ev.host_id ? Number(ev.host_id) : null, is_final: !!ev.is_final, status: ev.status, notes: ev.notes || null };
+    const saved = ev.id ? await api.update("events", ev.id, row) : await api.insert("events", row);
+    await api.del("cash", { event_id: saved.id });
+    await api.del("tourney", { event_id: saved.id });
+    await api.del("hands", { event_id: saved.id });
+    await api.insertMany("cash", cash.map(([id,r]) => ({ event_id: saved.id, player_id: Number(id), buyins: Number(r.buyins), final_chips: Number(r.chips)||0, hours_ok: !r.short })));
+    await api.insertMany("tourney", tour.map(([id,r]) => ({ event_id: saved.id, player_id: Number(id), position: Number(r.position), rebuy: !!r.rebuy })));
+    if (realized && E.hands.length){
+      if (DEMO){ for (const h of E.hands) await api.insert("hands", { event_id: saved.id, ...h }); }
+      else await api.insertMany("hands", E.hands.map(h => ({ event_id: saved.id, ...h })));
+    }
+    S.editing = null; S.openEvent = saved.id; toast("Semana salva");
+  } catch(e){ E.err = "Não foi possível salvar: " + (e.message || e); }
+  S.busy = false; render();
+}
+
+// ---------- Rodízio ----------
+function hostsView(){
+  const order = hostOrder(), next = upcoming(6), admin = isAdmin();
+  const counts = {}; seasonEvents().filter(e => e.status === "realizado").forEach(e => counts[e.host_id] = (counts[e.host_id]||0) + 1);
+  const out = activePlayers().filter(p => !order.includes(p.id));
+  const nextHost = next[0]?.host;
+  return `
+  <div class="head-row"><h2>Rodízio de casas</h2></div>
+  <div class="two">
+    <div class="panel">
+      <div class="panel-pad" style="padding-bottom:8px"><h3>Próximos encontros</h3></div>
+      ${next.length ? `<ul class="order">${next.map((n,i) => `<li class="${i===0?"next":""}"><span class="n">${fmtD(n.date)}</span><span class="nm" style="padding-left:28px"><strong>Casa de ${esc(pname(n.host))}</strong>${player(n.host)?.address ? `<small>${esc(player(n.host).address)}</small>` : ""}</span>${n.projected ? `<span class="pill plain">previsto</span>` : `<span class="pill good">agendado</span>`}</li>`).join("")}</ul>`
+        : `<div class="empty">Monte a ordem do rodízio${admin ? " ao lado" : " (administrador)"} para ver as próximas casas.</div>`}
+      <div class="panel-pad note">Encontros às ${WD[cfg().weekday]}s. A sequência continua a partir da última casa que recebeu. Para trocar uma data, lance a semana como agendada com outra casa.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-pad" style="padding-bottom:8px"><h3>Ordem fixa</h3></div>
+      ${order.length ? `<ul class="order">${order.map((id,i) => `<li class="${id===nextHost?"next":""}">
+        <span class="n">${i+1}</span><span class="nm"><strong>${esc(pname(id))}</strong><small>${counts[id]||0} ${counts[id]===1?"vez":"vezes"} nesta temporada</small></span>
+        ${admin ? `<button class="icon-btn" data-act="mv-host" data-v="${id}" data-d="-1" aria-label="Subir ${esc(pname(id))}" ${i===0?"disabled":""}>↑</button><button class="icon-btn" data-act="mv-host" data-v="${id}" data-d="1" aria-label="Descer ${esc(pname(id))}" ${i===order.length-1?"disabled":""}>↓</button><button class="icon-btn" data-act="rm-host" data-v="${id}" aria-label="Tirar ${esc(pname(id))} do rodízio">×</button>` : ""}
+      </li>`).join("")}</ul>` : `<div class="empty">Ninguém no rodízio ainda.</div>`}
+      ${admin && out.length ? `<div class="panel-pad" style="display:flex;flex-direction:column;gap:6px"><span class="note">Fora do rodízio</span><div style="display:flex;gap:6px;flex-wrap:wrap">${out.map(p => `<button class="btn sm" data-act="add-host" data-v="${p.id}">+ ${esc(p.name)}</button>`).join("")}</div></div>` : ""}
+    </div>
+  </div>`;
+}
+async function setOrder(order){
+  const s = season();
+  await api.update("seasons", s.id, { host_order: order });
+  render();
+}
+
+// ---------- Mensalidades ----------
+function paymentsView(){
+  const c = cfg(), inst = installments(), ps = activePlayers(), admin = isAdmin();
+  let paid = 0, lateN = 0;
+  const rows = ps.map(p => {
+    let n = 0; const cells = inst.map(i => { const st = payStatus(p.id, i); if (st.s === "ok"){ n++; paid += Number(st.p.amount)||0; } if (st.s === "late") lateN++; return { i, st }; });
+    return { p, n, cells };
+  });
+  const expected = ps.length * c.installments * c.fee;
+  return `
+  <div class="head-row"><h2>Mensalidades ${season().year}</h2><span class="note">${c.installments} × ${brl(c.fee)} por jogador</span></div>
+  <div class="stats">
+    <div class="stat"><span class="k">Recebido</span><span class="v num">${brl(paid)}</span><span class="s">de ${brl(expected)} previstos</span></div>
+    <div class="stat"><span class="k">Em atraso</span><span class="v num" style="color:${lateN?"var(--bad)":"inherit"}">${lateN} ${lateN===1?"parcela":"parcelas"}</span><span class="s num">${brl(lateN*c.fee)}</span></div>
+    <div class="stat"><span class="k">Jogadores em dia</span><span class="v num">${rows.filter(r => !r.cells.some(x => x.st.s === "late")).length} de ${ps.length}</span><span class="s">sem parcela vencida</span></div>
+  </div>
+  <div class="panel tbl-wrap pay">
+    <table><thead><tr><th>Jogador</th>${inst.map(i => `<th class="c">${i.label}${i.year !== season().year ? "/" + String(i.year).slice(2) : ""}</th>`).join("")}<th class="r">Pagas</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td style="white-space:nowrap"><strong>${esc(r.p.name)}</strong></td>
+      ${r.cells.map(({i,st}) => {
+        const lbl = st.s === "ok" ? "✓" : st.s === "late" ? "!" : "";
+        const title = st.s === "ok" ? `Paga em ${fmtDY(st.p.paid_on)} — ${brl(st.p.amount)}` : st.s === "late" ? `Vencida em ${dd(i.due)}` : `Vence em ${dd(i.due)}`;
+        return `<td class="cell">${admin ? `<button class="pc ${st.s}" data-act="pay" data-p="${r.p.id}" data-i="${i.i}" title="${title}" aria-label="${esc(r.p.name)}, ${i.label}: ${title}">${lbl}</button>` : `<span class="pc ${st.s}" title="${title}">${lbl}</span>`}</td>`;
+      }).join("")}
+      <td class="r num">${r.n}/${inst.length}</td></tr>`).join("")}</tbody></table>
+  </div>
+  <div class="legend"><span><i class="sw" style="background:var(--good-soft)"></i>Paga</span><span><i class="sw" style="background:var(--bad-soft)"></i>Vencida sem pagamento</span><span><i class="sw" style="border:1px solid var(--line)"></i>A vencer</span>${admin ? "<span>Toque numa parcela para marcar ou desmarcar o pagamento.</span>" : ""}</div>`;
+}
+
+// ---------- Caixa ----------
+function cashboxView(){
+  const sts = S.statements.filter(s => s.season_id === S.seasonId).sort((a,b) => a.ref_date < b.ref_date ? 1 : -1);
+  const last = sts[0], admin = isAdmin(), c = cfg();
+  const received = S.payments.filter(p => p.season_id === S.seasonId).reduce((s,p) => s + (Number(p.amount)||0), 0);
+  const yieldSum = sts.reduce((s,x) => s + (Number(x.yield)||0), 0);
+  const prizesTotal = [...c.prizes.cash, ...c.prizes.tourney].reduce((a,b) => a + b, 0);
+  return `
+  <div class="head-row"><h2>Caixa do campeonato</h2></div>
+  ${last ? `<div class="panel panel-pad" style="display:flex;flex-direction:column;gap:10px">
+    <h3>Último extrato · ${fmtDY(last.ref_date)}</h3>
+    <div class="big num">${brl(last.balance)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${last.investment ? `<span class="pill plain">${esc(last.investment)}</span>` : ""}
+      <span class="pill ${Number(last.yield)>=0?"good":"bad"}">rendimento no período ${brlSigned(Number(last.yield))}</span>
+      ${last.file_path ? (S.urls[last.file_path] ? `<a class="btn sm" href="${esc(S.urls[last.file_path])}" target="_blank" rel="noopener">Abrir extrato</a>` : `<span class="note">carregando anexo…</span>`) : ""}
+    </div>
+    ${last.notes ? `<div class="note">${esc(last.notes)}</div>` : ""}
+  </div>` : `<div class="panel empty">Nenhum extrato lançado nesta temporada.${admin ? " Lance o primeiro abaixo." : ""}</div>`}
+  <div class="stats">
+    <div class="stat"><span class="k">Mensalidades recebidas</span><span class="v num">${brl(received)}</span><span class="s">conforme a aba Mensalidades</span></div>
+    <div class="stat"><span class="k">Rendimentos somados</span><span class="v num">${brl(yieldSum)}</span><span class="s">${sts.length} ${sts.length===1?"extrato":"extratos"}</span></div>
+    <div class="stat"><span class="k">Diferença saldo × recebido</span><span class="v num">${last ? brlSigned(Number(last.balance) - received) : "—"}</span><span class="s">esperado ≈ rendimentos</span></div>
+    <div class="stat"><span class="k">Prêmios a pagar</span><span class="v num">${brl(prizesTotal)}</span><span class="s">campeonatos cash + torneio</span></div>
+  </div>
+  ${sts.length > 1 ? `<div class="panel tbl-wrap"><table><thead><tr><th>Data</th><th class="r">Saldo</th><th class="r">Rendimento</th><th class="hide-sm">Aplicação</th><th>Extrato</th>${admin?"<th></th>":""}</tr></thead><tbody>
+    ${sts.map(s => `<tr><td class="num">${fmtDY(s.ref_date)}</td><td class="r num">${brl(s.balance)}</td><td class="r num">${brlSigned(Number(s.yield))}</td><td class="hide-sm">${esc(s.investment||"")}</td>
+      <td>${s.file_path ? (S.urls[s.file_path] ? `<a href="${esc(S.urls[s.file_path])}" target="_blank" rel="noopener">abrir</a>` : "…") : `<span class="muted">—</span>`}</td>${admin?`<td class="r"><button class="btn sm danger" data-act="del-stmt" data-v="${s.id}">Excluir</button></td>`:""}</tr>`).join("")}
+  </tbody></table></div>` : (last && admin ? `<div><button class="btn sm danger" data-act="del-stmt" data-v="${last.id}">Excluir último extrato</button></div>` : "")}
+  ${admin ? `<form class="panel panel-pad" id="stmt-form" style="display:flex;flex-direction:column;gap:12px">
+    <h3>Lançar extrato</h3>
+    <div class="form-grid">
+      <label class="f" for="st-date">Data do extrato<input id="st-date" type="date" required value="${iso(today())}"></label>
+      <label class="f" for="st-bal">Saldo (R$)<input id="st-bal" type="number" step="0.01" required placeholder="0,00"></label>
+      <label class="f" for="st-yield">Rendimento no período (R$)<input id="st-yield" type="number" step="0.01" value="0"></label>
+      <label class="f" for="st-inv">Aplicação<input id="st-inv" type="text" placeholder="ex.: CDB liquidez diária 100% CDI" value="${esc(last?.investment||"")}"></label>
+    </div>
+    <label class="f" for="st-notes">Observação<input id="st-notes" type="text" placeholder="Opcional"></label>
+    <label class="f" for="st-file">Arquivo do extrato (PDF ou imagem)<input id="st-file" type="file" accept="application/pdf,image/*"></label>
+    <div><button class="btn primary" type="submit" ${S.busy?"disabled":""}>Salvar extrato</button></div>
+  </form>` : ""}`;
+}
+async function loadUrls(){
+  const paths = S.statements.filter(s => s.season_id === S.seasonId && s.file_path && !(s.file_path in S.urls)).map(s => s.file_path);
+  if (!paths.length) return;
+  for (const p of paths) S.urls[p] = await api.fileUrl(p) || "";
+  if (S.tab === "caixa") render();
+}
+
+// ---------- Admin ----------
+function adminView(){
+  const s = season(), c = cfg();
+  const ps = [...S.players].sort((a,b) => (b.active!==false) - (a.active!==false) || a.name.localeCompare(b.name,"pt-BR"));
+  return `
+  <div class="head-row"><h2>Administração</h2></div>
+  <div class="panel tbl-wrap">
+    <div class="panel-pad" style="padding-bottom:4px"><h3>Jogadores</h3></div>
+    <table><thead><tr><th>Nome</th><th>E-mail de login</th><th class="hide-sm">Endereço</th><th class="c">Admin</th><th class="c">Ativo</th></tr></thead><tbody>
+    ${ps.map(p => `<tr>
+      <td><input type="text" id="pl-n-${p.id}" value="${esc(p.name)}" data-pl="${p.id}" data-f="name" aria-label="Nome"></td>
+      <td><input type="email" id="pl-e-${p.id}" value="${esc(p.email||"")}" data-pl="${p.id}" data-f="email" aria-label="E-mail de ${esc(p.name)}"></td>
+      <td class="hide-sm"><input type="text" id="pl-a-${p.id}" value="${esc(p.address||"")}" data-pl="${p.id}" data-f="address" aria-label="Endereço de ${esc(p.name)}"></td>
+      <td class="c"><input type="checkbox" id="pl-adm-${p.id}" data-pl="${p.id}" data-f="is_admin" ${p.is_admin?"checked":""} aria-label="${esc(p.name)} é administrador"></td>
+      <td class="c"><input type="checkbox" id="pl-act-${p.id}" data-pl="${p.id}" data-f="active" ${p.active!==false?"checked":""} aria-label="${esc(p.name)} ativo"></td></tr>`).join("")}
+    </tbody></table>
+    <form id="add-player" class="panel-pad" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+      <label class="f" for="np-name" style="flex:1;min-width:140px">Novo jogador<input id="np-name" type="text" required placeholder="Nome"></label>
+      <label class="f" for="np-email" style="flex:1;min-width:180px">E-mail<input id="np-email" type="email" placeholder="para o login"></label>
+      <button class="btn" type="submit">Adicionar</button>
+    </form>
+    <div class="panel-pad note" style="padding-top:0">As alterações nos campos são salvas ao sair de cada campo. Jogador inativo some do rodízio e das mensalidades, mas o histórico continua.</div>
+  </div>
+
+  <form class="panel panel-pad" id="cfg-form" style="display:flex;flex-direction:column;gap:14px">
+    <h3>Regras da temporada ${s.year}</h3>
+    <div class="form-grid">
+      <label class="f" for="cf-fee">Mensalidade (R$)<input id="cf-fee" type="number" step="1" value="${c.fee}"></label>
+      <label class="f" for="cf-inst">Número de mensalidades<input id="cf-inst" type="number" min="1" max="24" value="${c.installments}"></label>
+      <label class="f" for="cf-fm">Primeira mensalidade em<select id="cf-fm">${MON.map((m,i) => `<option value="${i+1}" ${Number(c.first_month)===i+1?"selected":""}>${m}</option>`).join("")}</select></label>
+      <label class="f" for="cf-wd">Dia do encontro<select id="cf-wd">${WD.map((w,i) => `<option value="${i}" ${Number(c.weekday)===i?"selected":""}>${w}</option>`).join("")}</select></label>
+      <label class="f" for="cf-top">Melhores semanas que contam<input id="cf-top" type="number" min="1" value="${c.top_n}"></label>
+      <label class="f" for="cf-limit">Limite de cacifes no cash<input id="cf-limit" type="number" min="1" value="${c.cash.limit}"></label>
+      <label class="f" for="cf-pc">Prêmios campeonato cash (1º, 2º, 3º)<input id="cf-pc" type="text" value="${c.prizes.cash.join(", ")}"></label>
+      <label class="f" for="cf-pt">Prêmios campeonato torneio (1º, 2º, 3º)<input id="cf-pt" type="text" value="${c.prizes.tourney.join(", ")}"></label>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Salvar regras</button><button class="btn" type="button" data-act="new-season">Criar temporada ${Math.max(...S.seasons.map(x => x.year)) + 1}</button></div>
+    <p class="note" style="margin:0">Valores de buy-in, fichas e divisão de prêmios do dia seguem o regulamento: cash ${brl(c.cash.buyin)} por ${fnum(c.cash.chips)} fichas; torneio ${brl(c.tourney.buyin)} (${c.tourney.split.join("/")}%); final do cash ${brl(c.final_cash.buyin)} até ${c.final_cash.limit} cacifes; final do torneio ${brl(c.final_tourney.buyin)} (${c.final_tourney.split.join("/")}%). A nova temporada copia as regras e a ordem do rodízio.</p>
+  </form>`;
+}
+
+// =====================================================================
+// EVENTOS
+// =====================================================================
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act, v = el.dataset.v;
+  try {
+    switch (act){
+      case "tab": S.tab = v; S.editing = null; render(); window.scrollTo(0,0); break;
+      case "rank": S.rankType = v; render(); break;
+      case "expand": S.expanded = S.expanded === v ? null : v; render(); break;
+      case "open-event": S.openEvent = S.openEvent === Number(v) ? null : Number(v); render(); break;
+      case "new-event": startEditor(null); render(); break;
+      case "edit-event": startEditor(S.events.find(x => x.id === Number(v))); render(); break;
+      case "cancel-edit": S.editing = null; render(); break;
+      case "save-event": await saveEvent(); break;
+      case "del-event": {
+        if (el.dataset.confirm !== "1"){ el.dataset.confirm = "1"; el.textContent = "Confirmar exclusão"; return; }
+        await api.del("events", { id: Number(v) });
+        S.cash = S.cash.filter(r => r.event_id !== Number(v)); S.tourney = S.tourney.filter(r => r.event_id !== Number(v)); S.hands = S.hands.filter(r => r.event_id !== Number(v));
+        if (DEMO) demoSave();
+        S.openEvent = null; toast("Semana excluída"); render(); break;
+      }
+      case "add-hand": S.editing.hands.push({ player_id: Number(document.getElementById("h-player").value), kind: document.getElementById("h-kind").value }); render(); break;
+      case "rm-hand": S.editing.hands.splice(Number(v), 1); render(); break;
+      case "mv-host": { const o = [...hostOrder()], i = o.indexOf(Number(v)), j = i + Number(el.dataset.d); [o[i], o[j]] = [o[j], o[i]]; await setOrder(o); break; }
+      case "rm-host": await setOrder(hostOrder().filter(id => id !== Number(v))); break;
+      case "add-host": await setOrder([...hostOrder(), Number(v)]); break;
+      case "pay": {
+        const pid = Number(el.dataset.p), i = Number(el.dataset.i);
+        const ex = S.payments.find(x => x.season_id === S.seasonId && x.player_id === pid && x.installment === i);
+        if (ex) await api.del("payments", { season_id: S.seasonId, player_id: pid, installment: i });
+        else await api.upsert("payments", { season_id: S.seasonId, player_id: pid, installment: i, paid_on: iso(today()), amount: cfg().fee }, ["season_id","player_id","installment"]);
+        render(); break;
+      }
+      case "del-stmt": {
+        if (el.dataset.confirm !== "1"){ el.dataset.confirm = "1"; el.textContent = "Confirmar"; return; }
+        await api.del("statements", { id: Number(v) }); toast("Extrato excluído"); render(); break;
+      }
+      case "new-season": {
+        const cur = season(), year = S.seasons.length ? Math.max(...S.seasons.map(x => x.year)) + 1 : today().getFullYear() + 1;
+        const ns = await api.insert("seasons", { year, name: `Poker do Serafim ${year}`, config: cur?.config || {}, host_order: cur?.host_order || [] });
+        S.seasonId = ns.id; toast(`Temporada ${year} criada`); render(); break;
+      }
+      case "logout": await sb.auth.signOut(); S.me = null; render(); break;
+      case "toggle-signup": S.signup = !S.signup; S.loginMsg = ""; render(); break;
+      case "asplayer": S.asPlayer = !S.asPlayer; S.editing = null; render(); break;
+      case "reset-demo": try { localStorage.removeItem(DEMO_KEY); } catch(_){} Object.assign(S, demoSeed()); S.editing = null; pickSeason(); render(); toast("Exemplo recarregado"); break;
+    }
+  } catch(err){ toast("Erro: " + (err.message || err)); }
+});
+
+document.addEventListener("change", async e => {
+  const el = e.target;
+  if (el.id === "season-sel"){ S.seasonId = Number(el.value); S.editing = null; S.openEvent = null; render(); return; }
+  if (el.dataset.ed) { bindEditor(el); if (el.dataset.rerender) render(); return; }
+  if (el.dataset.pl){
+    const id = Number(el.dataset.pl), f = el.dataset.f;
+    let val = el.type === "checkbox" ? el.checked : el.value.trim();
+    if (f === "email") val = val ? val.toLowerCase() : null;
+    try { await api.update("players", id, { [f]: val }); toast("Jogador atualizado"); if (el.type === "checkbox") render(); }
+    catch(err){ toast("Erro: " + (err.message || err)); }
+  }
+});
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.ed && el.type !== "checkbox" && el.tagName !== "SELECT"){ bindEditor(el); const cc = document.getElementById("chipcheck"); if (cc) cc.innerHTML = chipCheck(); }
+});
+function bindEditor(el){
+  const E = S.editing; if (!E) return;
+  const [scope, a, b] = el.dataset.ed.split(".");
+  let val = el.type === "checkbox" ? el.checked : el.value;
+  if (scope === "ev"){
+    if (a === "host_id") val = Number(val);
+    if (a === "is_final") val = val === "1";
+    E.ev[a] = val;
+    if (a === "status") render();
+  } else {
+    E[scope][a][b] = val;
+  }
+}
+
+document.addEventListener("submit", async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    if (f.id === "login-form"){
+      const email = document.getElementById("lg-email").value.trim().toLowerCase(), password = document.getElementById("lg-pass").value;
+      S.loginEmail = email; S.busy = true; S.loginMsg = ""; render();
+      const r = S.signup ? await sb.auth.signUp({ email, password }) : await sb.auth.signInWithPassword({ email, password });
+      S.busy = false;
+      if (r.error){ S.loginMsg = r.error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : r.error.message; return render(); }
+      if (!r.data.session){ S.loginMsg = "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre."; S.signup = false; return render(); }
+      await afterLogin(r.data.session);
+    }
+    if (f.id === "add-player"){
+      const name = document.getElementById("np-name").value.trim(), email = document.getElementById("np-email").value.trim().toLowerCase();
+      if (!name) return;
+      await api.insert("players", { name, email: email || null, is_admin: false, active: true });
+      toast(`${name} adicionado`); render();
+    }
+    if (f.id === "cfg-form"){
+      const s = season(), cur = s.config || {};
+      const nums = id => document.getElementById(id).value.split(/[;,\s]+/).map(Number).filter(n => !isNaN(n) && n > 0);
+      const config = { ...cur,
+        fee: Number(document.getElementById("cf-fee").value), installments: Number(document.getElementById("cf-inst").value),
+        first_month: Number(document.getElementById("cf-fm").value), weekday: Number(document.getElementById("cf-wd").value),
+        top_n: Number(document.getElementById("cf-top").value),
+        cash: { ...(cur.cash||{}), limit: Number(document.getElementById("cf-limit").value) },
+        prizes: { cash: nums("cf-pc"), tourney: nums("cf-pt") } };
+      await api.update("seasons", s.id, { config }); toast("Regras salvas"); render();
+    }
+    if (f.id === "stmt-form"){
+      const file = document.getElementById("st-file").files[0];
+      S.busy = true; render();
+      let file_path = null;
+      if (file){ const safe = file.name.normalize("NFD").replace(/[^\w.-]+/g, "_"); file_path = `${season().year}/${Date.now()}-${safe}`; await api.upload(file, file_path); }
+      await api.insert("statements", {
+        season_id: S.seasonId, ref_date: document.getElementById("st-date").value,
+        balance: Number(document.getElementById("st-bal").value), yield: Number(document.getElementById("st-yield").value) || 0,
+        investment: document.getElementById("st-inv").value.trim() || null, notes: document.getElementById("st-notes").value.trim() || null, file_path });
+      S.busy = false; toast("Extrato salvo"); render();
+    }
+  } catch(err){ S.busy = false; toast("Erro: " + (err.message || err)); render(); }
+});
+
+// =====================================================================
+// INÍCIO
+// =====================================================================
+function pickSeason(){
+  if (S.seasons.find(s => s.id === S.seasonId)) return;
+  const y = today().getFullYear();
+  const sorted = [...S.seasons].sort((a,b) => b.year - a.year);
+  S.seasonId = (sorted.find(s => s.year <= y && S.events.some(e => e.season_id === s.id)) || sorted.find(s => s.year === y) || sorted[0])?.id ?? null;
+}
+async function afterLogin(session){
+  try { await api.loadAll(); }
+  catch(e){ S.loginMsg = "Não foi possível carregar os dados: " + e.message; S.me = null; return render(); }
+  const email = (session.user.email || "").toLowerCase();
+  const me = S.players.find(p => (p.email || "").toLowerCase() === email && p.active !== false);
+  if (!me){ S.loginMsg = `O e-mail ${email} ainda não está cadastrado no grupo. Peça ao administrador para incluir.`; await sb.auth.signOut(); S.me = null; return render(); }
+  S.me = { email, admin: !!me.is_admin, player: me };
+  pickSeason(); render();
+}
+async function init(){
+  if (DEMO){ S.me = { email: "demo", admin: true }; await api.loadAll(); pickSeason(); render(); return; }
+  if (!window.supabase){ document.getElementById("app").innerHTML = `<div class="wrap"><p class="err" style="margin-top:40px">Não foi possível carregar a biblioteca do Supabase. Verifique a conexão e recarregue a página.</p></div>`; return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await afterLogin(session); else render();
+  sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT"){ S.me = null; render(); } });
+}
+
+// ---------- dados de exemplo (só no modo demonstração) ----------
+function demoSeed(){
+  let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const names = ["André","Bruno","Carlos","Daniel","Eduardo","Fábio","Gustavo","Henrique","Igor","Júlio"];
+  const players = names.map((n,i) => ({ id: i+1, name: n + " (exemplo)", email: `jogador${i+1}@exemplo.com`, is_admin: i === 0, active: true, address: `Rua das Flores, ${100 + i*12}` }));
+  const year = today().getFullYear();
+  const seasons = [{ id: 1, year, name: `Exemplo ${year}`, config: { first_month: 1 }, host_order: players.map(p => p.id) }];
+  const events = [], cash = [], tourney = [], hands = [];
+  const start = new Date(year, 6, 2); // primeira quinta de julho (aprox.)
+  while (start.getDay() !== 4) start.setDate(start.getDate() + 1);
+  let id = 1, hostIdx = 0;
+  for (let d = new Date(start); d < today(); d.setDate(d.getDate() + 7)){
+    const evId = id++;
+    events.push({ id: evId, season_id: 1, date: iso(d), host_id: players[hostIdx].id, is_final: false, status: "realizado", notes: null });
+    hostIdx = (hostIdx + 1) % players.length;
+    const present = players.filter(() => rnd() > 0.25).map(p => p.id);
+    if (present.length < 4) present.push(...players.slice(0, 4).map(p => p.id).filter(x => !present.includes(x)));
+    const buys = present.map(() => 1 + Math.floor(rnd() * 3.4) + (rnd() > 0.95 ? 5 : 0));
+    const total = buys.reduce((a,b) => a + b, 0) * 5000;
+    const w = present.map(() => rnd() ** 1.6); const ws = w.reduce((a,b) => a + b, 0);
+    let chips = w.map(x => Math.round(total * x / ws / 100) * 100); chips[0] += total - chips.reduce((a,b) => a + b, 0);
+    present.forEach((pid,i) => cash.push({ event_id: evId, player_id: pid, buyins: buys[i], final_chips: chips[i], hours_ok: rnd() > 0.04 }));
+    const order = [...present].sort(() => rnd() - 0.5);
+    order.forEach((pid,i) => tourney.push({ event_id: evId, player_id: pid, position: i + 1, rebuy: rnd() > 0.7 }));
+    if (rnd() > 0.8) hands.push({ id: hands.length + 1, event_id: evId, player_id: present[Math.floor(rnd()*present.length)], kind: "quadra" });
+  }
+  const payments = [];
+  const curMonth = today().getMonth() + 1;
+  players.forEach(p => { for (let i = 1; i <= Math.min(10, curMonth); i++){ if (rnd() > (i >= curMonth - 1 ? 0.35 : 0.06)) payments.push({ season_id: 1, player_id: p.id, installment: i, paid_on: iso(new Date(year, i-1, 10)), amount: 200 }); } });
+  const paidBy = m => payments.filter(p => p.installment <= m).length * 200;
+  const statements = [];
+  for (const m of [curMonth - 3, curMonth - 2, curMonth - 1].filter(m => m >= 1)){
+    statements.push({ id: statements.length + 1, season_id: 1, ref_date: iso(new Date(year, m, 0)), balance: Math.round(paidBy(m) * (1 + 0.0085 * m) * 100) / 100, yield: Math.round(paidBy(m) * 0.0085 * 100) / 100, investment: "CDB liquidez diária 100% CDI", notes: null, file_path: null });
+  }
+  return { players, seasons, events, cash, tourney, hands, payments, statements, seasonId: null };
+}
+
+init();
+</script>
+</body>
+</html>
