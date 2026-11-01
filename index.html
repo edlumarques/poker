@@ -373,21 +373,33 @@ function standings(type){
 // ---------- rodízio de casas ----------
 function hostOrder(){ return (season()?.host_order || []).filter(id => player(id) && player(id).active !== false); }
 function upcoming(n){
+  // Próxima casa = quem recebeu menos vezes na temporada; empate decidido pela ordem fixa.
+  // Assim, se uma semana acontece numa casa trocada, quem foi pulado volta a ser o próximo.
   const order = hostOrder(), c = cfg(), t = iso(today());
   const evs = seasonEvents().filter(e => e.status !== "cancelado");
   const out = evs.filter(e => e.date >= t && e.status === "agendado").slice(0, n).map(e => ({ date: e.date, host: e.host_id, ev: e }));
   if (out.length >= n || !order.length) return out;
-  const last = [...evs].reverse().find(e => order.includes(e.host_id));
-  let idx = last ? (order.indexOf(last.host_id) + 1) % order.length : 0;
+  const counts = hostCounts(true);
+  const last = evs[evs.length - 1];
   const yesterday = new Date(today()); yesterday.setDate(yesterday.getDate() - 1);
   let d = last && pd(last.date) > yesterday ? pd(last.date) : yesterday;
   while (out.length < n){
     d = new Date(d); d.setDate(d.getDate() + 1);
     while (d.getDay() !== Number(c.weekday)) d.setDate(d.getDate() + 1);
-    out.push({ date: iso(d), host: order[idx], projected: true });
-    idx = (idx + 1) % order.length;
+    const pick = order.reduce((best, id) => counts[id] < counts[best] ? id : best, order[0]);
+    counts[pick]++;
+    out.push({ date: iso(d), host: pick, projected: true });
   }
   return out;
+}
+// Quantas vezes cada casa da ordem recebeu nesta temporada (com ou sem os agendamentos futuros)
+function hostCounts(withScheduled){
+  const t = iso(today()), counts = Object.fromEntries(hostOrder().map(id => [id, 0]));
+  for (const e of seasonEvents()){
+    if (!(e.host_id in counts)) continue;
+    if (e.status === "realizado" || (withScheduled && e.status === "agendado" && e.date >= t)) counts[e.host_id]++;
+  }
+  return counts;
 }
 
 // ---------- mensalidades ----------
@@ -681,7 +693,7 @@ function hostsView(){
       <div class="panel-pad" style="padding-bottom:8px"><h3>Próximos encontros</h3></div>
       ${next.length ? `<ul class="order">${next.map((n,i) => `<li class="${i===0?"next":""}"><span class="n">${fmtD(n.date)}</span><span class="nm" style="padding-left:28px"><strong>Casa de ${esc(pname(n.host))}</strong>${player(n.host)?.address ? `<small>${esc(player(n.host).address)}</small>` : ""}</span>${n.projected ? `<span class="pill plain">previsto</span>` : `<span class="pill good">agendado</span>`}</li>`).join("")}</ul>`
         : `<div class="empty">Monte a ordem do rodízio${admin ? " ao lado" : " (administrador)"} para ver as próximas casas.</div>`}
-      <div class="panel-pad note">Encontros às ${WD[cfg().weekday]}s. A sequência continua a partir da última casa que recebeu. Para trocar uma data, lance a semana como agendada com outra casa.</div>
+      <div class="panel-pad note">Encontros às ${WD[cfg().weekday]}s. A próxima casa é quem recebeu menos vezes na temporada; em empate, vale a ordem fixa. Se uma semana for numa casa trocada, quem foi pulado volta a ser o próximo. Para marcar uma troca, lance a semana como agendada com a outra casa.</div>
     </div>
     <div class="panel">
       <div class="panel-pad" style="padding-bottom:8px"><h3>Ordem fixa</h3></div>
