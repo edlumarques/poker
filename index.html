@@ -14,6 +14,7 @@
   --bg:#f1f3ef; --surface:#ffffff; --surface-2:#f6f7f3; --ink:#17221b; --muted:#5d6b62; --line:#dde3db;
   --felt:#173e2a; --felt-2:#1f4d35; --felt-ink:#eef3ea; --gold:#a07c26; --gold-soft:#f3e8cc;
   --good:#2c7549; --good-soft:#e0efe5; --warn:#9c6410; --warn-soft:#f7ebd4; --bad:#ad3e2d; --bad-soft:#f6e0db;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --ctx:#c3ccc5;
   --f-display:"Young Serif", Georgia, "Times New Roman", serif;
   --f-body:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-num:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -24,6 +25,7 @@
     --bg:#0d1410; --surface:#151f19; --surface-2:#1a261f; --ink:#e3eae4; --muted:#93a399; --line:#26332a;
     --felt:#0f2a1c; --felt-2:#153624; --felt-ink:#e8eee5; --gold:#d4ae58; --gold-soft:#372f1d;
     --good:#6cbf8c; --good-soft:#1b3224; --warn:#e2a750; --warn-soft:#382b16; --bad:#e3826f; --bad-soft:#3a201b;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --ctx:#34443a;
     color-scheme:dark;
   }
 }
@@ -31,6 +33,7 @@
   --bg:#0d1410; --surface:#151f19; --surface-2:#1a261f; --ink:#e3eae4; --muted:#93a399; --line:#26332a;
   --felt:#0f2a1c; --felt-2:#153624; --felt-ink:#e8eee5; --gold:#d4ae58; --gold-soft:#372f1d;
   --good:#6cbf8c; --good-soft:#1b3224; --warn:#e2a750; --warn-soft:#382b16; --bad:#e3826f; --bad-soft:#3a201b;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --ctx:#34443a;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -137,6 +140,26 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--felt)}
 .check{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
 .row-off td{opacity:.45}
 .err{color:var(--bad);font-size:14px}
+.evo-ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.evo-wrap{position:relative;padding:12px 8px 4px}
+.evo-wrap svg{display:block;width:100%;overflow:visible}
+.evo-wrap text{font-family:var(--f-body);font-size:11px;fill:var(--muted)}
+.evo-wrap .ax{font-family:var(--f-num)}
+.evo-wrap .lbl{fill:var(--ink);font-size:12px;font-weight:600}
+.evo-hit{touch-action:pan-y;cursor:crosshair}
+.evo-tip{position:absolute;top:8px;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.14);padding:8px 10px;font-size:13px;min-width:170px;z-index:5}
+.evo-tip.below{position:static;box-shadow:none;margin:4px 4px 8px;min-width:0}
+.evo-tip .t{font-weight:600;margin-bottom:4px}
+.evo-tip .rw{display:grid;grid-template-columns:12px 1fr auto auto;gap:6px;align-items:center;line-height:1.6}
+.evo-tip .rw.dim{color:var(--muted)}
+.evo-tip .d{width:9px;height:9px;border-radius:50%}
+.evo-tip .v{font-family:var(--f-num);font-weight:600;text-align:right}
+.evo-tip .g{font-family:var(--f-num);color:var(--muted);font-size:12px;text-align:right;min-width:30px}
+.pchips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 8px;cursor:pointer;font-size:13px;font-weight:500}
+.pchip .d{width:10px;height:10px;border-radius:50%;background:var(--ctx)}
+.pchip[aria-pressed="true"]{border-color:var(--ink)}
+details.tbl summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14px}
 .cfg-group{display:flex;flex-direction:column;gap:8px}
 .cfg-t{font-weight:600;font-size:14px}
 .note{font-size:13px;color:var(--muted)}
@@ -230,6 +253,10 @@ const dd = d => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1)
 const fmtD = s => { const d = pd(s); return `${WD[d.getDay()].slice(0,3)}, ${dd(d)}`; };
 const fmtDY = s => { const d = pd(s); return `${dd(d)}/${d.getFullYear()}`; };
 const season = () => S.seasons.find(s => s.id === S.seasonId);
+const pad2 = n => String(n).padStart(2, "0");
+function weekNumbers(){ const m = {}; let k = 0; seasonEvents().filter(e => e.status !== "cancelado" && !e.is_final).forEach(e => m[e.id] = ++k); return m; }
+function weekName(ev, nums){ if (ev.is_final) return "Dia final"; const n = (nums || weekNumbers())[ev.id]; return n ? `Semana ${pad2(n)}` : "Semana cancelada"; }
+function weekShort(ev, nums){ if (ev.is_final) return "Final"; const n = (nums || weekNumbers())[ev.id]; return n ? `S${pad2(n)}` : "—"; }
 const player = id => S.players.find(p => p.id === id);
 const pname = id => player(id)?.name || "—";
 const isAdmin = () => !!S.me?.admin && !S.asPlayer;
@@ -424,7 +451,7 @@ function payStatus(pid, inst){
 function render(){
   const app = document.getElementById("app");
   if (!S.me){ app.innerHTML = loginView(); return; }
-  const tabs = [["ranking","Ranking"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
+  const tabs = [["ranking","Ranking"],["evolucao","Evolução"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
   if (isAdmin()) tabs.push(["admin","Admin"]);
   if (!tabs.find(t => t[0] === S.tab)) S.tab = "ranking";
   const seasons = [...S.seasons].sort((a,b) => b.year - a.year);
@@ -442,8 +469,9 @@ function render(){
   </div></header>
   ${DEMO ? `<div class="demo-bar"><div class="wrap"><span><b>Modo demonstração.</b> Jogadores e resultados são exemplos e ficam salvos só neste navegador.</span>
     <span style="display:flex;gap:6px"><button data-act="asplayer">${S.asPlayer ? "Ver como administrador" : "Ver como jogador"}</button><button data-act="reset-demo">Recomeçar exemplo</button></span></div></div>` : ""}
-  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
+  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, evolucao:evolutionView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
   if (S.tab === "caixa") loadUrls();
+  if (S.tab === "evolucao" && season()) drawEvo();
 }
 
 function loginView(){
@@ -468,7 +496,7 @@ function noSeasonView(){
 
 // ---------- Ranking ----------
 function rankingView(){
-  const type = S.rankType, c = cfg(), rows = standings(type);
+  const type = S.rankType, c = cfg(), rows = standings(type), nums = weekNumbers();
   const evs = seasonEvents(), done = evs.filter(e => e.status === "realizado");
   const finalDone = done.some(e => e.is_final);
   const nx = upcoming(1)[0];
@@ -506,7 +534,7 @@ function rankingView(){
         </tr>
         ${open ? `<tr><td colspan="8" style="background:var(--surface-2)">
           <div class="note">Pontos por semana — riscadas não entram na soma (fora das ${c.top_n} melhores)</div>
-          <div class="weeks">${weeks.map(w => `<span class="wk ${r.kept.has(w.ev.id)?"":"off"}" title="${esc(w.reason||"")}">${dd(pd(w.ev.date))} <b>${w.pts}</b></span>`).join("")}
+          <div class="weeks">${weeks.map(w => `<span class="wk ${r.kept.has(w.ev.id)?"":"off"}" title="${esc(weekName(w.ev, nums) + " · " + dd(pd(w.ev.date)) + (w.reason ? " · " + w.reason : ""))}">${weekShort(w.ev, nums)} <b>${w.pts}</b></span>`).join("")}
           ${r.final != null ? `<span class="wk fin">Final <b>${r.final}</b></span>` : ""}</div>
         </td></tr>` : ""}`;
       }).join("")}</tbody></table>`
@@ -515,10 +543,130 @@ function rankingView(){
   <p class="note">Pontuação: o 1º do dia recebe tantos pontos quanto o número de presentes e o último recebe 1. No cash, quem passa de ${c.cash.limit} cacifes ou joga menos de 2 horas fica com 0. Total = ${c.top_n} melhores semanas + dia final em dobro. Empate decidido pela soma de todas as semanas (coluna Desempate).</p>`;
 }
 
+// ---------- Evolução ----------
+function evoData(type){
+  const c = cfg(), evs = seasonEvents().filter(e => e.status === "realizado");
+  const reg = evs.filter(e => !e.is_final), fin = evs.find(e => e.is_final), nums = weekNumbers();
+  const resOf = ev => type === "cash" ? cashResults(ev) : tourneyResults(ev).out;
+  const res = reg.map(resOf), finRes = fin ? resOf(fin) : null;
+  const pids = new Set();
+  res.forEach(r => Object.keys(r).forEach(k => pids.add(+k)));
+  if (finRes) Object.keys(finRes).forEach(k => pids.add(+k));
+  const points = reg.map(ev => ({ ev, label: weekShort(ev, nums), name: weekName(ev, nums) }));
+  if (fin) points.push({ ev: fin, label: "Final", name: "Dia final (pontos em dobro)" });
+  const series = [...pids].map(pid => {
+    const wk = [], tot = [], best = [], gain = [];
+    reg.forEach((ev, i) => {
+      const p = res[i][pid]?.pts || 0; wk.push(p); gain.push(p);
+      tot.push(wk.reduce((a,b) => a + b, 0));
+      best.push([...wk].sort((a,b) => b - a).slice(0, c.top_n).reduce((a,b) => a + b, 0));
+    });
+    if (fin){
+      const f = (finRes[pid]?.pts || 0) * 2; gain.push(f);
+      tot.push((tot[tot.length-1] || 0) + f); best.push((best[best.length-1] || 0) + f);
+    }
+    return { pid, tot, best, gain };
+  });
+  return { points, series };
+}
+function ensureEvoSel(){
+  if (S.evoSlots) return;
+  const top = standings(S.rankType).slice(0, 3).map(r => r.pid);
+  const me = S.me?.player?.id;
+  if (me && !top.includes(me)) top.push(me);
+  S.evoSlots = [0,1,2,3,4].map(i => top[i] ?? null);
+}
+const evoColor = pid => { const i = (S.evoSlots || []).indexOf(pid); return i >= 0 ? `var(--s${i+1})` : null; };
+
+function evolutionView(){
+  ensureEvoSel();
+  const c = cfg(), type = S.rankType, mode = S.evoMode || "best";
+  const d = evoData(type), key = mode === "best" ? "best" : "tot";
+  const order = [...d.series].sort((a,b) => (b[key].at(-1) || 0) - (a[key].at(-1) || 0) || pname(a.pid).localeCompare(pname(b.pid), "pt-BR"));
+  return `
+  <div class="head-row"><h2>Evolução ${type === "cash" ? "do Cash Game" : "do Torneio"} ${season().year}</h2></div>
+  <div class="evo-ctl">
+    <div class="seg" role="group" aria-label="Campeonato">
+      <button data-act="rank" data-v="cash" aria-pressed="${type==="cash"}">Cash Game</button>
+      <button data-act="rank" data-v="tourney" aria-pressed="${type==="tourney"}">Torneio</button>
+    </div>
+    <div class="seg" role="group" aria-label="Pontos">
+      <button data-act="evo-mode" data-v="best" aria-pressed="${mode==="best"}">Melhores ${c.top_n}</button>
+      <button data-act="evo-mode" data-v="total" aria-pressed="${mode==="total"}">Pontos totais</button>
+    </div>
+  </div>
+  <div class="panel">
+    ${d.points.length ? `<div class="evo-wrap" id="evo-chart"></div>` : `<div class="empty">A evolução aparece aqui depois da primeira semana realizada.</div>`}
+  </div>
+  ${d.points.length ? `
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span class="note">Destaque até 5 jogadores tocando nos nomes. Os demais aparecem em cinza. Passe o dedo ou o mouse sobre o gráfico para ver os pontos de cada semana.</span>
+    <div class="pchips">${order.map(s => { const col = evoColor(s.pid); return `<button class="pchip" data-act="evo-pick" data-v="${s.pid}" aria-pressed="${!!col}"><span class="d" style="${col ? `background:${col}` : ""}"></span>${esc(pname(s.pid))}</button>`; }).join("")}</div>
+  </div>
+  <p class="note">${mode === "best" ? `Melhores ${c.top_n}: a cada semana soma só as ${c.top_n} melhores semanas de cada jogador até ali, como no ranking oficial.` : "Pontos totais: soma de todas as semanas jogadas, sem descarte."} O dia final entra com pontos em dobro.</p>
+  <details class="panel tbl"><summary>Ver em tabela</summary><div class="tbl-wrap"><table>
+    <thead><tr><th>Jogador</th>${d.points.map(p => `<th class="r" title="${esc(p.name)}">${p.label}</th>`).join("")}</tr></thead>
+    <tbody>${order.map(s => `<tr><td style="white-space:nowrap"><strong>${esc(pname(s.pid))}</strong></td>${s[key].map(v => `<td class="r num">${v}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div></details>` : ""}`;
+}
+
+function drawEvo(){
+  const box = document.getElementById("evo-chart"); if (!box) return;
+  const mode = S.evoMode || "best", key = mode === "best" ? "best" : "tot";
+  const d = evoData(S.rankType), n = d.points.length; if (!n) return;
+  const W = Math.max(280, box.clientWidth - 16), narrow = W < 520;
+  const H = narrow ? 290 : 360, m = { t: 14, r: narrow ? 74 : 104, b: 28, l: 34 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const maxV = Math.max(1, ...d.series.flatMap(s => s[key]));
+  const raw = maxV / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1,2,2.5,5,10].map(k => k * mag).find(s => s >= raw);
+  const yMax = Math.ceil(maxV / step) * step;
+  const X = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1)), Y = v => m.t + ih - v / yMax * ih;
+  const path = vals => vals.map((v,i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+  const hi = d.series.filter(s => evoColor(s.pid)), lo = d.series.filter(s => !evoColor(s.pid));
+  let g = "";
+  for (let v = 0; v <= yMax + 1e-9; v += step){
+    g += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1" ${v ? 'stroke-dasharray="2 4"' : ""}/>`;
+    g += `<text class="ax" x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 40))));
+  d.points.forEach((p, i) => { if (i % every === 0 || i === n - 1) g += `<text class="ax" x="${X(i)}" y="${H - 8}" text-anchor="middle">${p.label}</text>`; });
+  lo.forEach(s => g += `<path d="${path(s[key])}" fill="none" stroke="var(--ctx)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`);
+  hi.forEach(s => g += `<path d="${path(s[key])}" fill="none" stroke="${evoColor(s.pid)}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`);
+  hi.forEach(s => g += `<circle cx="${X(n-1)}" cy="${Y(s[key][n-1])}" r="4.5" fill="${evoColor(s.pid)}" stroke="var(--surface)" stroke-width="2"/>`);
+  // rótulos no fim das linhas, afastados para não se sobreporem
+  const labs = hi.map(s => ({ s, y: Y(s[key][n-1]) })).sort((a,b) => a.y - b.y);
+  for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i-1].y < 14) labs[i].y = labs[i-1].y + 14;
+  const over = labs.length ? labs[labs.length-1].y - (m.t + ih + 4) : 0;
+  if (over > 0) labs.forEach(l => l.y -= over);
+  labs.forEach(l => { const nm = pname(l.s.pid).replace(/\s*\(exemplo\)/, ""); g += `<text class="lbl" x="${X(n-1) + 9}" y="${l.y + 4}">${esc(nm.length > (narrow ? 8 : 12) ? nm.slice(0, narrow ? 7 : 11) + "…" : nm)} <tspan class="ax" style="font-weight:500;fill:var(--muted)">${l.s[key][n-1]}</tspan></text>`; });
+  g += `<line id="evo-x" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/><g id="evo-dots"></g>`;
+  g += `<rect class="evo-hit" x="${m.l - 10}" y="${m.t}" width="${iw + 20}" height="${ih}" fill="transparent"/>`;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Pontuação acumulada por semana">${g}</svg><div class="evo-tip" hidden></div>`;
+  const svg = box.querySelector("svg"), tip = box.querySelector(".evo-tip"), cross = box.querySelector("#evo-x"), dots = box.querySelector("#evo-dots");
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round(n === 1 ? 0 : (px - m.l) / iw * (n - 1))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dots.innerHTML = hi.map(s => `<circle cx="${X(i)}" cy="${Y(s[key][i])}" r="5" fill="${evoColor(s.pid)}" stroke="var(--surface)" stroke-width="2"/>`).join("");
+    const rows = [...d.series].sort((a,b) => b[key][i] - a[key][i]);
+    const p = d.points[i];
+    tip.innerHTML = `<div class="t">${esc(p.name)} <span class="muted" style="font-weight:400">· ${dd(pd(p.ev.date))}</span></div>` +
+      rows.map(s => { const col = evoColor(s.pid); return `<div class="rw ${col ? "" : "dim"}"><span class="d" style="background:${col || "var(--ctx)"}"></span><span>${esc(pname(s.pid))}</span><span class="v">${s[key][i]}</span><span class="g">+${s.gain[i]}</span></div>`; }).join("");
+    tip.hidden = false;
+    if (narrow){ tip.classList.add("below"); return; }
+    const bw = box.clientWidth, tw = tip.offsetWidth, xPix = X(i) * r.width / W + 8;
+    tip.style.left = (xPix + 14 + tw > bw ? Math.max(4, xPix - tw - 14) : xPix + 14) + "px";
+  };
+  const hide = () => { if (narrow) return; tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
+  const hit = box.querySelector(".evo-hit");
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
+}
+let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") drawEvo(); }, 150); });
+
 // ---------- Semanas ----------
 function weeksView(){
   if (S.editing) return editorView();
-  const evs = [...seasonEvents()].reverse();
+  const evs = [...seasonEvents()].reverse(), nums = weekNumbers();
   return `
   <div class="head-row"><h2>Semanas de ${season().year}</h2>${isAdmin() ? `<button class="btn primary" data-act="new-event">Lançar semana</button>` : ""}</div>
   <div class="panel ev-list">
@@ -530,7 +678,7 @@ function weeksView(){
       const open = S.openEvent === ev.id;
       return `<button class="ev" data-act="open-event" data-v="${ev.id}" aria-expanded="${open}">
         <span class="date">${fmtD(ev.date)}</span>
-        <span class="who"><strong>Casa de ${esc(pname(ev.host_id))} ${ev.is_final ? `<span class="pill gold">Dia final</span>` : ""}</strong>
+        <span class="who"><strong>${ev.is_final ? `<span class="pill gold">Dia final</span>` : weekName(ev, nums)} · Casa de ${esc(pname(ev.host_id))}</strong>
           <span>${ev.status === "realizado" ? `${pres} presentes · Cash: ${cw ? esc(pname(+cw[0])) : "—"} · Torneio: ${tw ? esc(pname(+tw[0])) : "—"}` : esc(ev.notes || "")}</span></span>
         ${st}
       </button>${open ? eventDetail(ev) : ""}`;
@@ -603,7 +751,7 @@ function editorView(){
   const cc = ev.is_final ? cfg().final_cash : cfg().cash, tc = ev.is_final ? cfg().final_tourney : cfg().tourney;
   const players = activePlayers();
   return `
-  <div class="head-row"><h2>${ev.id ? "Editar semana" : "Lançar semana"}</h2><button class="btn" data-act="cancel-edit">Voltar</button></div>
+  <div class="head-row"><h2>${ev.id ? "Editar " + (ev.is_final ? "dia final" : weekName(ev).toLowerCase()) : "Lançar semana"}</h2><button class="btn" data-act="cancel-edit">Voltar</button></div>
   <div class="panel panel-pad form-grid">
     <label class="f" for="ed-date">Data<input id="ed-date" type="date" value="${ev.date}" data-ed="ev.date"></label>
     <label class="f" for="ed-host">Casa de<select id="ed-host" data-ed="ev.host_id">${players.map(p => `<option value="${p.id}" ${p.id===ev.host_id?"selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
@@ -873,6 +1021,13 @@ document.addEventListener("click", async e => {
     switch (act){
       case "tab": S.tab = v; S.editing = null; S.editStmt = null; render(); window.scrollTo(0,0); break;
       case "rank": S.rankType = v; render(); break;
+      case "evo-mode": S.evoMode = v; render(); break;
+      case "evo-pick": {
+        const pid = Number(v), i = S.evoSlots.indexOf(pid);
+        if (i >= 0) S.evoSlots[i] = null;
+        else { const f = S.evoSlots.indexOf(null); if (f < 0) { toast("Máximo de 5 jogadores em destaque. Desmarque um antes."); break; } S.evoSlots[f] = pid; }
+        render(); break;
+      }
       case "expand": S.expanded = S.expanded === v ? null : v; render(); break;
       case "open-event": S.openEvent = S.openEvent === Number(v) ? null : Number(v); render(); break;
       case "new-event": startEditor(null); render(); break;
