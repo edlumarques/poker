@@ -159,6 +159,14 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--felt)}
 .pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px 4px 8px;cursor:pointer;font-size:13px;font-weight:500}
 .pchip .d{width:10px;height:10px;border-radius:50%;background:var(--ctx)}
 .pchip[aria-pressed="true"]{border-color:var(--ink)}
+.bw td,.bw th{padding:7px 8px}
+.bw th:nth-child(2),.bw td:nth-child(2){position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--line)}
+.bw td.wkc{text-align:center;min-width:46px}
+.bw td.wkc b{display:block;font-family:var(--f-num);font-size:15px;line-height:1.2}
+.bw td.wkc span{display:block;font-family:var(--f-num);font-size:11px;color:var(--muted)}
+.bw td.wkc.zero b{color:var(--muted)}
+.bw td.tot{font-family:var(--f-num);font-weight:700;font-size:16px;text-align:right;background:var(--surface-2)}
+.bw td.disc{font-size:12px;color:var(--muted);min-width:120px}
 details.tbl summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14px}
 .cfg-group{display:flex;flex-direction:column;gap:8px}
 .cfg-t{font-weight:600;font-size:14px}
@@ -451,7 +459,7 @@ function payStatus(pid, inst){
 function render(){
   const app = document.getElementById("app");
   if (!S.me){ app.innerHTML = loginView(); return; }
-  const tabs = [["ranking","Ranking"],["evolucao","Evolução"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
+  const tabs = [["ranking","Ranking"],["evolucao","Evolução"],["validos","Melhores semanas"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
   if (isAdmin()) tabs.push(["admin","Admin"]);
   if (!tabs.find(t => t[0] === S.tab)) S.tab = "ranking";
   const seasons = [...S.seasons].sort((a,b) => b.year - a.year);
@@ -469,7 +477,7 @@ function render(){
   </div></header>
   ${DEMO ? `<div class="demo-bar"><div class="wrap"><span><b>Modo demonstração.</b> Jogadores e resultados são exemplos e ficam salvos só neste navegador.</span>
     <span style="display:flex;gap:6px"><button data-act="asplayer">${S.asPlayer ? "Ver como administrador" : "Ver como jogador"}</button><button data-act="reset-demo">Recomeçar exemplo</button></span></div></div>` : ""}
-  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, evolucao:evolutionView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
+  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, evolucao:evolutionView, validos:bestWeeksView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
   if (S.tab === "caixa") loadUrls();
   if (S.tab === "evolucao" && season()) drawEvo();
 }
@@ -662,6 +670,41 @@ function drawEvo(){
   hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
 }
 let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") drawEvo(); }, 150); });
+
+// ---------- Melhores semanas (resultados válidos) ----------
+function bestWeeksView(){
+  const type = S.rankType, c = cfg(), rows = standings(type), nums = weekNumbers();
+  const cols = Math.min(c.top_n, Math.max(0, ...rows.map(r => r.reg.length)));
+  const hasFinal = rows.some(r => r.final != null);
+  return `
+  <div class="head-row">
+    <h2>Melhores semanas · ${type === "cash" ? "Cash Game" : "Torneio"} ${season().year}</h2>
+    <div class="seg" role="group" aria-label="Campeonato">
+      <button data-act="rank" data-v="cash" aria-pressed="${type==="cash"}">Cash Game</button>
+      <button data-act="rank" data-v="tourney" aria-pressed="${type==="tourney"}">Torneio</button>
+    </div>
+  </div>
+  <p class="note" style="margin:0">As ${c.top_n} melhores semanas de cada jogador, que são as que valem para o campeonato, da maior para a menor pontuação. Embaixo de cada número está a semana em que foi feito.${hasFinal ? " O dia final vale em dobro e não pode ser descartado." : ""}</p>
+  <div class="panel tbl-wrap">
+    ${rows.length ? `<table class="bw">
+      <thead><tr><th class="c">#</th><th>Jogador</th>${Array.from({length: cols}, (_, i) => `<th class="c">${i+1}ª</th>`).join("")}${hasFinal ? `<th class="c">Final ×2</th>` : ""}<th class="r">Total</th><th>Descartadas</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const kept = r.reg.filter(w => r.kept.has(w.ev.id)).sort((a,b) => b.pts - a.pts || byDate(a.ev, b.ev));
+        const disc = r.reg.filter(w => !r.kept.has(w.ev.id)).sort((a,b) => byDate(a.ev, b.ev));
+        const cell = w => `<td class="wkc ${w.pts ? "" : "zero"}" title="${esc(weekName(w.ev, nums) + " · " + fmtDY(w.ev.date) + (w.reason ? " · " + w.reason : ""))}"><b>${w.pts}</b><span>${weekShort(w.ev, nums)}</span></td>`;
+        return `<tr>
+          <td class="c"><span class="chip ${r.rank<=3?"p"+r.rank:""}">${r.rank}</span></td>
+          <td style="white-space:nowrap"><strong>${esc(pname(r.pid))}</strong><br><span class="note">${r.played} ${r.played===1?"semana":"semanas"}</span></td>
+          ${Array.from({length: cols}, (_, i) => kept[i] ? cell(kept[i]) : `<td class="wkc"><span>—</span></td>`).join("")}
+          ${hasFinal ? (r.final != null ? `<td class="wkc"><b>${r.final}</b><span>Final</span></td>` : `<td class="wkc"><span>—</span></td>`) : ""}
+          <td class="tot">${r.total}</td>
+          <td class="disc">${disc.length ? disc.map(w => `${weekShort(w.ev, nums)} (${w.pts})`).join(", ") : "—"}</td>
+        </tr>`;
+      }).join("")}</tbody></table>`
+      : `<div class="empty">Nenhuma semana realizada nesta temporada ainda.</div>`}
+  </div>
+  <p class="note">Total = soma das ${c.top_n} melhores semanas${hasFinal ? " + dia final em dobro" : ""}. É o mesmo número do Ranking. Toque ou passe o mouse sobre um resultado para ver a data. Em Descartadas, o número entre parênteses é a pontuação da semana que ficou de fora.</p>`;
+}
 
 // ---------- Semanas ----------
 function weeksView(){
