@@ -167,6 +167,29 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--felt)}
 .bw td.wkc.zero b{color:var(--muted)}
 .bw td.tot{font-family:var(--f-num);font-weight:700;font-size:16px;text-align:right;background:var(--surface-2)}
 .bw td.disc{font-size:12px;color:var(--muted);min-width:120px}
+.home-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.home-top select{width:auto;min-width:200px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.hgrid>*{min-width:0}
+.hcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.hcard .hk{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.hpos{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hpos .n{font-family:var(--f-display);font-size:44px;line-height:1}
+.hpos .of{color:var(--muted);font-size:14px}
+.hline{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-top:1px solid var(--line);padding-top:8px}
+.hline span:last-child{font-family:var(--f-num);font-weight:600}
+.mv{font-family:var(--f-num);font-size:13px;font-weight:600}
+.mv.up{color:var(--good)} .mv.down{color:var(--bad)} .mv.eq{color:var(--muted)}
+.hwide{grid-column:1/-1}
+.paygrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.paygrid .pc{width:100%;height:auto;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:12px;border-radius:6px;border:1px solid var(--line)}
+.paygrid .pc small{font-size:11px;font-weight:500}
+.paygrid .pc.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.paygrid .pc.late{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.paygrid .pc.soon{color:var(--muted)}
+.mini-leg{display:flex;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.mini-leg span{display:inline-flex;align-items:center;gap:6px}
+.mini-leg i{width:14px;height:3px;border-radius:2px;display:inline-block}
 details.tbl summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14px}
 .cfg-group{display:flex;flex-direction:column;gap:8px}
 .cfg-t{font-weight:600;font-size:14px}
@@ -234,7 +257,7 @@ const TABLES = { players:"players", seasons:"seasons", events:"events", cash:"ca
 
 const S = {
   players:[], seasons:[], events:[], cash:[], tourney:[], hands:[], payments:[], statements:[],
-  seasonId:null, tab:"ranking", rankType:"cash", me:null, asPlayer:false,
+  seasonId:null, tab:"inicio", rankType:"cash", me:null, asPlayer:false,
   openEvent:null, editing:null, expanded:null, urls:{}, loginMsg:"", signup:false, busy:false
 };
 let sb = null;
@@ -382,9 +405,9 @@ function tourneyResults(ev){
   });
   return { out, pool, N, rebuys };
 }
-function standings(type){
+function standings(type, upto){
   const c = cfg(), per = {};
-  for (const ev of seasonEvents().filter(e => e.status === "realizado")){
+  for (const ev of seasonEvents().filter(e => e.status === "realizado" && (!upto || e.date <= upto))){
     const res = type === "cash" ? cashResults(ev) : tourneyResults(ev).out;
     for (const [pid, r] of Object.entries(res)){
       const p = per[pid] ||= { pid: Number(pid), reg: [], final: null };
@@ -459,7 +482,7 @@ function payStatus(pid, inst){
 function render(){
   const app = document.getElementById("app");
   if (!S.me){ app.innerHTML = loginView(); return; }
-  const tabs = [["ranking","Ranking"],["evolucao","Evolução"],["validos","Melhores semanas"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
+  const tabs = [["inicio","Início"],["ranking","Ranking"],["evolucao","Evolução"],["validos","Melhores semanas"],["semanas","Semanas"],["casas","Rodízio de casas"],["mensalidades","Mensalidades"],["caixa","Caixa"]];
   if (isAdmin()) tabs.push(["admin","Admin"]);
   if (!tabs.find(t => t[0] === S.tab)) S.tab = "ranking";
   const seasons = [...S.seasons].sort((a,b) => b.year - a.year);
@@ -477,9 +500,10 @@ function render(){
   </div></header>
   ${DEMO ? `<div class="demo-bar"><div class="wrap"><span><b>Modo demonstração.</b> Jogadores e resultados são exemplos e ficam salvos só neste navegador.</span>
     <span style="display:flex;gap:6px"><button data-act="asplayer">${S.asPlayer ? "Ver como administrador" : "Ver como jogador"}</button><button data-act="reset-demo">Recomeçar exemplo</button></span></div></div>` : ""}
-  <main class="wrap" id="main">${!season() ? noSeasonView() : ({ranking:rankingView, evolucao:evolutionView, validos:bestWeeksView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
+  <main class="wrap" id="main">${!season() ? noSeasonView() : ({inicio:homeView, ranking:rankingView, evolucao:evolutionView, validos:bestWeeksView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
   if (S.tab === "caixa") loadUrls();
   if (S.tab === "evolucao" && season()) drawEvo();
+  if (S.tab === "inicio" && season()) drawHome();
 }
 
 function loginView(){
@@ -500,6 +524,145 @@ function loginView(){
 
 function noSeasonView(){
   return `<div class="panel empty"><p>Nenhuma temporada criada ainda.</p>${isAdmin() ? `<button class="btn primary" data-act="new-season">Criar temporada ${today().getFullYear()}</button>` : `<p>Aguarde o administrador abrir a temporada.</p>`}</div>`;
+}
+
+// ---------- Início (painel do jogador) ----------
+function homePid(){
+  const ids = activePlayers().map(p => p.id);
+  if (S.homePid && player(S.homePid)) return S.homePid;
+  const me = S.me?.player?.id;
+  if (me && ids.includes(me)) return me;
+  return standings("cash")[0]?.pid ?? ids[0] ?? null;
+}
+function rankInfo(type, pid){
+  const rows = standings(type), r = rows.find(x => x.pid === pid);
+  const dates = [...new Set(seasonEvents().filter(e => e.status === "realizado").map(e => e.date))].sort();
+  let move = null;
+  if (r && dates.length > 1){
+    const prev = standings(type, dates[dates.length - 2]).find(x => x.pid === pid);
+    move = prev ? prev.rank - r.rank : null;
+  }
+  const above = r ? rows.filter(x => x.total > r.total).sort((a,b) => a.total - b.total)[0] : null;
+  return { r, n: rows.length, leader: rows[0], above, move };
+}
+function homeView(){
+  const pid = homePid(), c = cfg();
+  if (!pid) return `<div class="panel empty">Cadastre os jogadores na aba Admin para ver o painel.</div>`;
+  const nums = weekNumbers(), me = S.me?.player?.id;
+  const posCard = (type, title) => {
+    const { r, n, leader, above, move } = rankInfo(type, pid);
+    if (!r) return `<div class="hcard"><div class="hk">${title}</div><div class="muted">Ainda sem resultados nesta temporada.</div></div>`;
+    const mv = move == null ? "" : move > 0 ? `<span class="mv up" title="em relação à semana anterior">▲ ${move}</span>` : move < 0 ? `<span class="mv down" title="em relação à semana anterior">▼ ${-move}</span>` : `<span class="mv eq" title="em relação à semana anterior">= mantém</span>`;
+    const prize = (c.prizes[type] || [])[r.rank - 1];
+    return `<div class="hcard">
+      <div class="hk">${title} ${mv}</div>
+      <div class="hpos"><span class="n">${r.rank}º</span><span class="of">de ${n} · <b class="num" style="color:var(--ink)">${r.total} pts</b></span></div>
+      <div class="hline"><span>${r.rank === 1 ? "Vantagem para o 2º" : "Atrás do líder"}</span><span>${r.rank === 1 ? (standings(type)[1] ? (r.total - standings(type)[1].total) + " pts" : "—") : (leader.total - r.total) + " pts"}</span></div>
+      ${above && r.rank > 1 ? `<div class="hline"><span>Para passar ${esc(pname(above.pid))}</span><span>${above.total - r.total + 1} pts</span></div>` : ""}
+      <div class="hline"><span>Semanas jogadas</span><span>${r.played}${r.discarded ? ` (${r.discarded} ${r.discarded === 1 ? "descartada" : "descartadas"})` : ""}</span></div>
+      ${prize ? `<div class="hline"><span>Prêmio se terminasse hoje</span><span>${brl(prize)}</span></div>` : ""}
+    </div>`;
+  };
+  // casa
+  const order = hostOrder(), counts = hostCounts(false);
+  const next = order.includes(pid) ? upcoming(order.length * 2 + 4).find(x => x.host === pid) : null;
+  const daysTo = next ? Math.round((pd(next.date) - today()) / 864e5) : null;
+  const hostCard = `<div class="hcard">
+    <div class="hk">Sua casa</div>
+    ${!order.includes(pid) ? `<div class="muted">Fora do rodízio de casas nesta temporada.</div>` :
+      next ? `<div class="hpos"><span class="n" style="font-size:30px">${fmtD(next.date)}</span></div>
+        <div class="muted" style="font-size:14px">${daysTo === 0 ? "É hoje!" : daysTo === 1 ? "Amanhã" : `Daqui a ${daysTo} dias`} · ${next.projected ? "data prevista pelo rodízio" : "já agendada"}</div>` : `<div class="muted">Sem data prevista.</div>`}
+    ${order.includes(pid) ? `<div class="hline"><span>Já recebeu nesta temporada</span><span>${counts[pid] || 0}×</span></div>
+    <div class="hline"><span>Posição no rodízio</span><span>${order.indexOf(pid) + 1}º de ${order.length}</span></div>` : ""}
+  </div>`;
+  // pagamentos
+  const inst = installments(); let paid = 0, late = 0, paidAmt = 0;
+  const cells = inst.map(i => { const st = payStatus(pid, i); if (st.s === "ok"){ paid++; paidAmt += Number(st.p.amount) || 0; } if (st.s === "late") late++;
+    const t = st.s === "ok" ? `Paga em ${fmtDY(st.p.paid_on)}` : st.s === "late" ? `Vencida em ${dd(i.due)}` : `Vence em ${dd(i.due)}`;
+    return `<span class="pc ${st.s}" title="${t}">${i.label}<small>${st.s === "ok" ? "paga" : st.s === "late" ? "atraso" : "a vencer"}</small></span>`; }).join("");
+  const payCard = `<div class="hcard">
+    <div class="hk">Mensalidades ${late ? `<span class="pill bad">${late} em atraso</span>` : `<span class="pill good">em dia</span>`}</div>
+    <div class="hpos"><span class="n" style="font-size:30px">${paid}/${inst.length}</span><span class="of">pagas · ${brl(paidAmt)}</span></div>
+    <div class="paygrid">${cells}</div>
+    ${late ? `<div class="hline"><span>Valor em atraso</span><span style="color:var(--bad)">${brl(late * c.fee)}</span></div>` : ""}
+  </div>`;
+  // melhores semanas
+  const bestCard = (type, title) => {
+    const r = standings(type).find(x => x.pid === pid);
+    if (!r) return `<div class="hcard"><div class="hk">${title}</div><div class="muted">Sem semanas jogadas.</div></div>`;
+    const kept = r.reg.filter(w => r.kept.has(w.ev.id)).sort((a,b) => b.pts - a.pts || byDate(a.ev, b.ev));
+    const left = Math.max(0, c.top_n - kept.length);
+    return `<div class="hcard">
+      <div class="hk">${title} <span class="num" style="text-transform:none;letter-spacing:0">${r.top} pts</span></div>
+      <div class="weeks">${kept.map(w => `<span class="wk" title="${esc(weekName(w.ev, nums) + " · " + fmtDY(w.ev.date))}">${weekShort(w.ev, nums)} <b>${w.pts}</b></span>`).join("")}${r.final != null ? `<span class="wk fin">Final <b>${r.final}</b></span>` : ""}</div>
+      <div class="note">${left ? `Ainda cabem ${left} ${left === 1 ? "semana" : "semanas"} nas ${c.top_n} que valem.` : `Menor resultado que conta hoje: ${kept[kept.length-1].pts} pts. Para entrar nas ${c.top_n}, uma semana nova precisa passar disso.`}</div>
+    </div>`;
+  };
+  const players = activePlayers();
+  return `
+  <div class="home-top">
+    <div><h2>${esc(pname(pid))}</h2><span class="muted">Temporada ${season().year}${pid === me ? " · seu painel" : ""}</span></div>
+    <label class="f" for="home-pid">Ver o painel de<select id="home-pid">${players.map(p => `<option value="${p.id}" ${p.id === pid ? "selected" : ""}>${esc(p.name)}${p.id === me ? " (você)" : ""}</option>`).join("")}</select></label>
+  </div>
+  <div class="hgrid">
+    ${posCard("cash", "Cash game")}
+    ${posCard("tourney", "Torneio")}
+    ${hostCard}
+    <div class="hcard hwide">
+      <div class="hk">Evolução · melhores ${c.top_n} acumuladas <button class="btn sm" data-act="tab" data-v="evolucao" style="text-transform:none;letter-spacing:0">Ver todos</button></div>
+      <div class="mini-leg"><span><i style="background:var(--s1)"></i>Cash game</span><span><i style="background:var(--s2)"></i>Torneio</span></div>
+      <div class="evo-wrap" id="home-chart" style="padding:0"></div>
+    </div>
+    ${bestCard("cash", "Melhores semanas · cash")}
+    ${bestCard("tourney", "Melhores semanas · torneio")}
+    ${payCard}
+  </div>`;
+}
+function drawHome(){
+  const box = document.getElementById("home-chart"); if (!box) return;
+  const pid = homePid(), dc = evoData("cash"), dt = evoData("tourney"), n = dc.points.length;
+  if (!n){ box.innerHTML = `<div class="empty">A evolução aparece depois da primeira semana realizada.</div>`; return; }
+  const zeros = Array(n).fill(0);
+  const ser = [
+    { name: "Cash", col: "var(--s1)", v: dc.series.find(s => s.pid === pid)?.best || zeros, g: dc.series.find(s => s.pid === pid)?.gain || zeros, rk: i => rankAt(dc, i, pid) },
+    { name: "Torneio", col: "var(--s2)", v: dt.series.find(s => s.pid === pid)?.best || zeros, g: dt.series.find(s => s.pid === pid)?.gain || zeros, rk: i => rankAt(dt, i, pid) }
+  ];
+  const W = Math.max(260, box.clientWidth), H = W < 520 ? 200 : 230, m = { t: 12, r: 64, b: 26, l: 32 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const maxV = Math.max(1, ...ser.flatMap(s => s.v));
+  const raw = maxV / 3, mag = Math.pow(10, Math.floor(Math.log10(raw))), step = [1,2,2.5,5,10].map(k => k * mag).find(s => s >= raw);
+  const yMax = Math.ceil(maxV / step) * step;
+  const X = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1)), Y = v => m.t + ih - v / yMax * ih;
+  let g = "";
+  for (let v = 0; v <= yMax + 1e-9; v += step){ g += `<line x1="${m.l}" x2="${m.l+iw}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" ${v ? 'stroke-dasharray="2 4"' : ""}/><text class="ax" x="${m.l-6}" y="${Y(v)+4}" text-anchor="end">${Math.round(v)}</text>`; }
+  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 40))));
+  dc.points.forEach((p, i) => { if (i % every === 0 || i === n - 1) g += `<text class="ax" x="${X(i)}" y="${H-6}" text-anchor="middle">${p.label}</text>`; });
+  ser.forEach(s => g += `<path d="${s.v.map((v,i) => `${i?"L":"M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("")}" fill="none" stroke="${s.col}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`);
+  const labs = ser.map(s => ({ s, y: Y(s.v[n-1]) })).sort((a,b) => a.y - b.y);
+  if (labs[1].y - labs[0].y < 14) labs[1].y = labs[0].y + 14;
+  labs.forEach(l => g += `<circle cx="${X(n-1)}" cy="${Y(l.s.v[n-1])}" r="4.5" fill="${l.s.col}" stroke="var(--surface)" stroke-width="2"/><text class="lbl" x="${X(n-1)+9}" y="${l.y+4}">${l.s.v[n-1]}</text>`);
+  g += `<line id="hm-x" y1="${m.t}" y2="${m.t+ih}" stroke="var(--muted)" visibility="hidden"/><g id="hm-d"></g><rect class="evo-hit" x="${m.l-10}" y="${m.t}" width="${iw+20}" height="${ih}" fill="transparent"/>`;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Pontuação acumulada do jogador">${g}</svg><div class="evo-tip" hidden></div>`;
+  const svg = box.querySelector("svg"), tip = box.querySelector(".evo-tip"), cross = box.querySelector("#hm-x"), dots = box.querySelector("#hm-d");
+  const show = e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n-1, Math.round(n === 1 ? 0 : (px - m.l) / iw * (n-1))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dots.innerHTML = ser.map(s => `<circle cx="${X(i)}" cy="${Y(s.v[i])}" r="5" fill="${s.col}" stroke="var(--surface)" stroke-width="2"/>`).join("");
+    const p = dc.points[i];
+    tip.innerHTML = `<div class="t">${esc(p.name)} <span class="muted" style="font-weight:400">· ${dd(pd(p.ev.date))}</span></div>` + ser.map(s => `<div class="rw"><span class="d" style="background:${s.col}"></span><span>${s.name} · ${s.rk(i)}º</span><span class="v">${s.v[i]}</span><span class="g">+${s.g[i]}</span></div>`).join("");
+    tip.hidden = false;
+    const bw = box.clientWidth, tw = tip.offsetWidth, xp = X(i) * r.width / W;
+    tip.style.left = (xp + 14 + tw > bw ? Math.max(0, xp - tw - 14) : xp + 14) + "px";
+  };
+  const hit = box.querySelector(".evo-hit");
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show);
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; });
+}
+// posição do jogador no ranking (melhores N) na semana i do gráfico
+function rankAt(d, i, pid){
+  const me = d.series.find(s => s.pid === pid); if (!me) return "—";
+  return 1 + d.series.filter(s => s.best[i] > me.best[i]).length;
 }
 
 // ---------- Ranking ----------
@@ -669,7 +832,7 @@ function drawEvo(){
   const hit = box.querySelector(".evo-hit");
   hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
 }
-let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") drawEvo(); }, 150); });
+let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") drawEvo(); if (S.tab === "inicio") drawHome(); }, 150); });
 
 // ---------- Melhores semanas (resultados válidos) ----------
 function bestWeeksView(){
@@ -1119,6 +1282,7 @@ document.addEventListener("click", async e => {
 
 document.addEventListener("change", async e => {
   const el = e.target;
+  if (el.id === "home-pid"){ S.homePid = Number(el.value); render(); return; }
   if (el.id === "season-sel"){ S.seasonId = Number(el.value); S.editing = null; S.openEvent = null; render(); return; }
   if (el.dataset.ed) { bindEditor(el); if (el.dataset.rerender) render(); return; }
   if (el.dataset.pl){
