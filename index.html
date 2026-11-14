@@ -502,7 +502,7 @@ function render(){
     <span style="display:flex;gap:6px"><button data-act="asplayer">${S.asPlayer ? "Ver como administrador" : "Ver como jogador"}</button><button data-act="reset-demo">Recomeçar exemplo</button></span></div></div>` : ""}
   <main class="wrap" id="main">${!season() ? noSeasonView() : ({inicio:homeView, ranking:rankingView, evolucao:evolutionView, validos:bestWeeksView, semanas:weeksView, casas:hostsView, mensalidades:paymentsView, caixa:cashboxView, admin:adminView})[S.tab]()}</main>`;
   if (S.tab === "caixa") loadUrls();
-  if (S.tab === "evolucao" && season()) drawEvo();
+  if (S.tab === "evolucao" && season()) { drawEvo(); drawRank(); }
   if (S.tab === "inicio" && season()) drawHome();
 }
 
@@ -774,10 +774,17 @@ function evolutionView(){
     <span class="note">Destaque até 5 jogadores tocando nos nomes. Os demais aparecem em cinza. Passe o dedo ou o mouse sobre o gráfico para ver os pontos de cada semana.</span>
     <div class="pchips">${order.map(s => { const col = evoColor(s.pid); return `<button class="pchip" data-act="evo-pick" data-v="${s.pid}" aria-pressed="${!!col}"><span class="d" style="${col ? `background:${col}` : ""}"></span>${esc(pname(s.pid))}</button>`; }).join("")}</div>
   </div>
+  <div class="head-row" style="margin-top:6px"><h2 style="font-size:18px">Posição semana a semana</h2></div>
+  <div class="panel"><div class="evo-wrap" id="evo-rank"></div></div>
+  <p class="note" style="margin:0">Posição no campeonato ao fim de cada semana, pelo critério escolhido acima (${mode === "best" ? `melhores ${c.top_n}` : "pontos totais"}). Linha subindo é jogador ganhando posições. Pontuações iguais dividem a mesma posição${mode === "best" ? ", com desempate pela soma de todas as semanas, como no ranking" : ""}.</p>
   <p class="note">${mode === "best" ? `Melhores ${c.top_n}: a cada semana soma só as ${c.top_n} melhores semanas de cada jogador até ali, como no ranking oficial.` : "Pontos totais: soma de todas as semanas jogadas, sem descarte."} O dia final entra com pontos em dobro.</p>
   <details class="panel tbl"><summary>Ver em tabela</summary><div class="tbl-wrap"><table>
     <thead><tr><th>Jogador</th>${d.points.map(p => `<th class="r" title="${esc(p.name)}">${p.label}</th>`).join("")}</tr></thead>
     <tbody>${order.map(s => `<tr><td style="white-space:nowrap"><strong>${esc(pname(s.pid))}</strong></td>${s[key].map(v => `<td class="r num">${v}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div></details>
+  <details class="panel tbl"><summary>Ver posições em tabela</summary><div class="tbl-wrap"><table>
+    <thead><tr><th>Jogador</th>${d.points.map(p => `<th class="r" title="${esc(p.name)}">${p.label}</th>`).join("")}</tr></thead>
+    <tbody>${(() => { const rk = evoRanks(d, key); return order.map(s => `<tr><td style="white-space:nowrap"><strong>${esc(pname(s.pid))}</strong></td>${rk[s.pid].map(v => `<td class="r num">${v}º</td>`).join("")}</tr>`).join(""); })()}</tbody>
   </table></div></details>` : ""}`;
 }
 
@@ -832,7 +839,67 @@ function drawEvo(){
   const hit = box.querySelector(".evo-hit");
   hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
 }
-let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") drawEvo(); if (S.tab === "inicio") drawHome(); }, 150); });
+// posição de cada jogador em cada semana (1 = líder); empate no critério "melhores" é decidido pelo total bruto, como no ranking
+function evoRanks(d, key){
+  const out = {}, n = d.points.length;
+  d.series.forEach(s => out[s.pid] = []);
+  for (let i = 0; i < n; i++){
+    d.series.forEach(s => {
+      const v = s[key][i], t = s.tot[i];
+      out[s.pid].push(1 + d.series.filter(o => o[key][i] > v || (key === "best" && o[key][i] === v && o.tot[i] > t)).length);
+    });
+  }
+  return out;
+}
+function drawRank(){
+  const box = document.getElementById("evo-rank"); if (!box) return;
+  const key = (S.evoMode || "best") === "best" ? "best" : "tot";
+  const d = evoData(S.rankType), n = d.points.length, N = d.series.length; if (!n || !N) return;
+  const rk = evoRanks(d, key);
+  const W = Math.max(280, box.clientWidth - 16), narrow = W < 520;
+  const H = Math.max(narrow ? 240 : 280, N * (narrow ? 24 : 28) + 50), m = { t: 14, r: narrow ? 84 : 116, b: 28, l: 34 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const X = i => m.l + (n === 1 ? iw / 2 : i * iw / (n - 1)), Y = r => m.t + (N === 1 ? ih / 2 : (r - 1) * ih / (N - 1));
+  const path = a => a.map((r,i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(r).toFixed(1)}`).join("");
+  const hi = d.series.filter(s => evoColor(s.pid)), lo = d.series.filter(s => !evoColor(s.pid));
+  let g = "";
+  for (let r = 1; r <= N; r++){
+    g += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(r)}" y2="${Y(r)}" stroke="var(--line)" stroke-dasharray="2 4"/>`;
+    g += `<text class="ax" x="${m.l - 8}" y="${Y(r) + 4}" text-anchor="end">${r}º</text>`;
+  }
+  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 40))));
+  d.points.forEach((p, i) => { if (i % every === 0 || i === n - 1) g += `<text class="ax" x="${X(i)}" y="${H - 8}" text-anchor="middle">${p.label}</text>`; });
+  lo.forEach(s => g += `<path d="${path(rk[s.pid])}" fill="none" stroke="var(--ctx)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`);
+  hi.forEach(s => g += `<path d="${path(rk[s.pid])}" fill="none" stroke="${evoColor(s.pid)}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`);
+  hi.forEach(s => rk[s.pid].forEach((r, i) => { if (n <= 26) g += `<circle cx="${X(i)}" cy="${Y(r)}" r="3" fill="${evoColor(s.pid)}" stroke="var(--surface)" stroke-width="1.5"/>`; }));
+  const labs = hi.map(s => ({ s, r: rk[s.pid][n-1], y: Y(rk[s.pid][n-1]) })).sort((a,b) => a.y - b.y);
+  for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i-1].y < 14) labs[i].y = labs[i-1].y + 14;
+  labs.forEach(l => { g += `<circle cx="${X(n-1)}" cy="${Y(l.r)}" r="5" fill="${evoColor(l.s.pid)}" stroke="var(--surface)" stroke-width="2"/>`;
+    const nm = pname(l.s.pid).replace(/\s*\(exemplo\)/, ""), cut = narrow ? 8 : 12;
+    g += `<text class="lbl" x="${X(n-1) + 10}" y="${l.y + 4}">${l.r}º <tspan style="font-weight:500">${esc(nm.length > cut ? nm.slice(0, cut - 1) + "…" : nm)}</tspan></text>`; });
+  g += `<line id="rk-x" y1="${m.t}" y2="${m.t + ih}" stroke="var(--muted)" visibility="hidden"/><g id="rk-d"></g>`;
+  g += `<rect class="evo-hit" x="${m.l - 10}" y="${m.t - 8}" width="${iw + 20}" height="${ih + 16}" fill="transparent"/>`;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Posição de cada jogador por semana">${g}</svg><div class="evo-tip" hidden></div>`;
+  const svg = box.querySelector("svg"), tip = box.querySelector(".evo-tip"), cross = box.querySelector("#rk-x"), dots = box.querySelector("#rk-d");
+  const show = ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(n - 1, Math.round(n === 1 ? 0 : (px - m.l) / iw * (n - 1))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dots.innerHTML = hi.map(s => `<circle cx="${X(i)}" cy="${Y(rk[s.pid][i])}" r="6" fill="${evoColor(s.pid)}" stroke="var(--surface)" stroke-width="2"/>`).join("");
+    const p = d.points[i], rows = [...d.series].sort((a,b) => rk[a.pid][i] - rk[b.pid][i] || pname(a.pid).localeCompare(pname(b.pid), "pt-BR"));
+    tip.innerHTML = `<div class="t">${esc(p.name)} <span class="muted" style="font-weight:400">· ${dd(pd(p.ev.date))}</span></div>` +
+      rows.map(s => { const col = evoColor(s.pid), prev = i ? rk[s.pid][i-1] : null, mv = prev == null ? "" : prev > rk[s.pid][i] ? `▲${prev - rk[s.pid][i]}` : prev < rk[s.pid][i] ? `▼${rk[s.pid][i] - prev}` : "=";
+        return `<div class="rw ${col ? "" : "dim"}"><span class="d" style="background:${col || "var(--ctx)"}"></span><span>${rk[s.pid][i]}º ${esc(pname(s.pid))}</span><span class="v">${s[key][i]}</span><span class="g" style="color:${mv.startsWith("▲") ? "var(--good)" : mv.startsWith("▼") ? "var(--bad)" : "var(--muted)"}">${mv}</span></div>`; }).join("");
+    tip.hidden = false;
+    if (narrow){ tip.classList.add("below"); return; }
+    const bw = box.clientWidth, tw = tip.offsetWidth, xPix = X(i) * r.width / W + 8;
+    tip.style.left = (xPix + 14 + tw > bw ? Math.max(4, xPix - tw - 14) : xPix + 14) + "px";
+  };
+  const hide = () => { if (narrow) return; tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
+  const hit = box.querySelector(".evo-hit");
+  hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hide);
+}
+let _evoT; window.addEventListener("resize", () => { clearTimeout(_evoT); _evoT = setTimeout(() => { if (S.tab === "evolucao") { drawEvo(); drawRank(); } if (S.tab === "inicio") drawHome(); }, 150); });
 
 // ---------- Melhores semanas (resultados válidos) ----------
 function bestWeeksView(){
@@ -1324,8 +1391,14 @@ document.addEventListener("submit", async e => {
       S.loginEmail = email; S.busy = true; S.loginMsg = ""; render();
       const r = S.signup ? await sb.auth.signUp({ email, password }) : await sb.auth.signInWithPassword({ email, password });
       S.busy = false;
-      if (r.error){ S.loginMsg = r.error.message === "Invalid login credentials" ? "E-mail ou senha incorretos." : r.error.message; return render(); }
-      if (!r.data.session){ S.loginMsg = "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre."; S.signup = false; return render(); }
+      if (r.error){ S.loginMsg = authMsg(r.error); if (/already registered/i.test(r.error.message)) S.signup = false; return render(); }
+      if (!r.data.session){
+        S.signup = false;
+        S.loginMsg = r.data.user && Array.isArray(r.data.user.identities) && r.data.user.identities.length === 0
+          ? "Este e-mail já tem senha cadastrada. Use Entrar. Se esqueceu a senha, peça ao administrador para refazer seu acesso."
+          : "Senha criada, mas o acesso ainda precisa de confirmação. Avise o administrador para liberar seu e-mail.";
+        return render();
+      }
       await afterLogin(r.data.session);
     }
     if (f.id === "add-player"){
@@ -1381,6 +1454,17 @@ async function createSeason(year){
   const cur = season();
   const ns = await api.insert("seasons", { year, name: `Poker do Serafim ${year}`, config: cur?.config || {}, host_order: cur?.host_order || [] });
   S.seasonId = ns.id; S.editing = null; S.openEvent = null; toast(`Temporada ${year} criada`); render();
+}
+function authMsg(e){
+  const m = String(e?.message || e || "");
+  if (/invalid login credentials/i.test(m)) return "E-mail ou senha incorretos. Se é seu primeiro acesso, toque em “Primeiro acesso? Criar senha”.";
+  if (/email not confirmed/i.test(m)) return "Seu e-mail ainda não foi liberado. Avise o administrador para liberar seu acesso.";
+  if (/already registered|already been registered/i.test(m)) return "Este e-mail já tem senha cadastrada. Use Entrar com a senha que você criou.";
+  if (/password should be at least|weak password/i.test(m)) return "A senha precisa ter pelo menos 6 caracteres.";
+  if (/rate limit|too many/i.test(m)) return "Muitas tentativas em pouco tempo. Espere alguns minutos e tente de novo.";
+  if (/invalid email|unable to validate email/i.test(m)) return "Confira o e-mail digitado.";
+  if (/signups not allowed|signup is disabled/i.test(m)) return "O cadastro de senhas está desativado no momento. Avise o administrador.";
+  return m;
 }
 function pickSeason(){
   if (S.seasons.find(s => s.id === S.seasonId)) return;
