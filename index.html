@@ -493,6 +493,7 @@ function render(){
       <div class="top-ctl">
         ${seasons.length ? `<label class="hide-sm" for="season-sel" style="opacity:.75">Temporada</label>
         <select id="season-sel" data-act="season">${seasons.map(s => `<option value="${s.id}" ${s.id===S.seasonId?"selected":""}>${s.year}</option>`).join("")}</select>` : ""}
+        <a class="ghost" href="/regras/" style="text-decoration:none">Regras</a>
         ${DEMO ? "" : `<button class="ghost" data-act="logout">Sair</button>`}
       </div>
     </div>
@@ -519,6 +520,7 @@ function loginView(){
     <button class="btn primary" type="submit" ${S.busy?"disabled":""}>${S.signup ? "Criar senha e entrar" : "Entrar"}</button>
     <button class="btn" type="button" data-act="toggle-signup">${S.signup ? "Já tenho senha" : "Primeiro acesso? Criar senha"}</button>
     <p class="note" style="margin:0">Use o e-mail que o administrador cadastrou no grupo.</p>
+    <a class="note" href="/regras/" style="text-align:center">Ver as regras do campeonato</a>
   </form></div>`;
 }
 
